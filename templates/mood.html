@@ -1,51 +1,312 @@
 {% extends "base.html" %}
-{% block title %}我的情绪曲线 · 心屿{% endblock %}
+{% block title %}情绪日记 · 心屿{% endblock %}
 {% block head %}<script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>{% endblock %}
 {% block body %}
 <div class="hero-banner">
-  <h1>📈 我的情绪曲线</h1>
+  <h1>📔 我的情绪日记</h1>
   <p>每天花10秒记录心情，慢慢看见自己的变化。低谷时别硬扛，找咨询师聊聊。</p>
 </div>
-<div class="card">
-  <h3>今天，感觉怎么样？</h3>
-  <form method="post" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <label class="f" style="margin:0">心情</label>
-    <select name="mood" style="width:auto">
-      <option value="5">😄 超棒</option>
-      <option value="3">🙂 不错</option>
-      <option value="1">😐 一般</option>
-      <option value="-1">🙁 有点低</option>
-      <option value="-3">😢 很难过</option>
-      <option value="-5">🌧 撑不住</option>
-    </select>
-    <input type="text" name="note" placeholder="今天发生了什么？（可写）" style="flex:1">
-    <button class="btn">记录</button>
-  </form>
+
+<div class="mood-layout">
+  <!-- 左侧主区 -->
+  <div class="mood-main">
+    <div class="card">
+      <h3>今天，感觉怎么样？</h3>
+      <form method="post" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <label class="f" style="margin:0">心情</label>
+        <select name="mood" style="width:auto">
+          <option value="5">😄 超棒</option>
+          <option value="3">🙂 不错</option>
+          <option value="1">😐 一般</option>
+          <option value="-1">🙁 有点低</option>
+          <option value="-3">😢 很难过</option>
+          <option value="-5">🌧 撑不住</option>
+        </select>
+        <input type="text" name="note" placeholder="今天发生了什么？（可写）" style="flex:1;min-width:160px">
+        <button class="btn">记录</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="mood-chart-head">
+        <h3 style="margin:0">心情变化曲线</h3>
+        <div class="range-tabs">
+          <button type="button" class="rtab active" data-range="week">近一周</button>
+          <button type="button" class="rtab" data-range="month">近一月</button>
+          <button type="button" class="rtab" data-range="year">近一年</button>
+          <button type="button" class="rtab" data-range="all">全部</button>
+        </div>
+      </div>
+      <div id="moodChart" style="width:100%;height:300px"></div>
+      <p style="font-size:12px;color:#adb5bd;margin-top:8px">曲线仅展示你亲手记录的心情值（-5 到 +5），用于观察自己的情绪起伏。</p>
+    </div>
+
+    <div class="card">
+      <div class="mood-list-head">
+        <h3 style="margin:0">心情记录</h3>
+        <span id="listTitle" class="mood-list-tip">全部日期</span>
+      </div>
+      <div id="diaryList"></div>
+      <p id="listEmpty" style="display:none;color:#adb5bd;text-align:center;padding:20px">这一天还没有记录。</p>
+    </div>
+  </div>
+
+  <!-- 右侧：往期日记侧栏 -->
+  <aside class="mood-side">
+    <div class="card mood-side-card">
+      <h3>🗓 往期日记</h3>
+      <div class="side-tabs">
+        <button type="button" class="stab active" data-smode="day">按日</button>
+        <button type="button" class="stab" data-smode="week">按周</button>
+        <button type="button" class="stab" data-smode="month">按月</button>
+        <button type="button" class="stab" data-smode="year">按年</button>
+      </div>
+      <p style="font-size:12px;color:#adb5bd;margin:6px 0 10px">点击分组，查看那段时间的心事</p>
+      <div id="sideDates"></div>
+    </div>
+  </aside>
 </div>
-<div class="card">
-  <div id="moodChart" style="width:100%;height:320px"></div>
-</div>
-<div class="card">
-  <h3>最近的心情记录</h3>
-  <table class="tbl"><tr><th>日期</th><th>心情</th><th>备注</th></tr>
-  {% for r in rows %}
-  <tr><td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-      <td>{{ '😄' if r.mood>=3 else ('🙂' if r.mood>=1 else ('😐' if r.mood>=0 else ('🙁' if r.mood>=-3 else '🌧'))) }} {{ r.mood }}</td>
-      <td>{{ r.note }}</td></tr>
-  {% else %}<tr><td colspan="3">还没有记录，从今天开始吧。</td></tr>{% endfor %}
-  </table>
-</div>
+
 <script>
-fetch('/api/mood').then(function(r){return r.json();}).then(function(d){
-  var c = echarts.init(document.getElementById('moodChart'));
-  c.setOption({
-    backgroundColor:'transparent',
-    title:{text:'心情变化（-5~+5）',textStyle:{fontSize:15}},
-    tooltip:{trigger:'axis',triggerOn:'click',renderMode:'richText',confine:true},
-    xAxis:{type:'category',data:d.labels},
-    yAxis:{type:'value',min:-5,max:5},
-    series:[{type:'line',data:d.vals,smooth:true,areaStyle:{color:'rgba(255,107,107,.2)'},lineStyle:{color:'#ff6b6b'},itemStyle:{color:'#ff6b6b'}}]
+var EMOJIS = {5: '😄', 3: '🙂', 1: '😐', 0: '😐', '-1': '🙁', '-3': '😢', '-5': '🌧'};
+function emojiFor(v){ return EMOJIS[v] || '😐'; }
+
+// 全量日记数据（后端渲染，最新在前）
+var ALL_ROWS = [
+  {% for r in rows %}
+  {date: '{{ r.created_at.strftime("%Y-%m-%d") }}', time: '{{ r.created_at.strftime("%H:%M") }}', mood: {{ r.mood }}, note: {{ r.note|tojson }}},
+  {% endfor %}
+];
+var CURRENT_DATE = null; // day 模式下选中的日期，null=全部
+var SIDE_MODE = 'day';   // day | week | month | year
+var SIDE_KEY = null;     // 当前筛选的聚合键
+
+function parseDate(s){ var p=s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+
+// ISO 周年周号，返回 [year, week]
+function isoWeek(d){
+  var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  var day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  var yearStart = new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  var week = Math.ceil((((t - yearStart) / 86400000) + 1)/7);
+  return [t.getUTCFullYear(), week];
+}
+
+// 周起止日期标签，如 "10.06 - 10.12"
+function weekRangeLabel(year, week){
+  var jan4 = new Date(Date.UTC(year, 0, 4));
+  var mon = new Date(jan4);
+  mon.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() || 7) - 1) + (week - 1) * 7);
+  var sun = new Date(mon);
+  sun.setUTCDate(mon.getUTCDate() + 6);
+  function fmt(dt){ return (dt.getUTCMonth()+1) + '.' + dt.getUTCDate(); }
+  return fmt(mon) + ' - ' + fmt(sun);
+}
+
+function groupByDate(rows){
+  var map = {}, order = [];
+  rows.forEach(function(r){
+    if (!map[r.date]) { map[r.date] = {date: r.date, items: [], moodSum: 0}; order.push(r.date); }
+    map[r.date].items.push(r);
+    map[r.date].moodSum += r.mood;
+  });
+  return order.map(function(d){ var g = map[d]; g.avg = Math.round(g.moodSum / g.items.length); return g; });
+}
+
+// 按 SIDE_MODE 聚合：返回 [{key, label, sub, items, avg, n}]
+function aggregate(rows){
+  if (SIDE_MODE === 'day') {
+    return groupByDate(rows).map(function(g){
+      var p = g.date.split('-');
+      return {key: g.date, label: parseInt(p[2],10)+'日', sub: parseInt(p[1],10)+'月', items: g.items, avg: g.avg, n: g.items.length};
+    });
+  }
+  var map = {}, order = [];
+  rows.forEach(function(r){
+    var key = null, label = '', sub = '';
+    if (SIDE_MODE === 'week'){
+      var w = isoWeek(parseDate(r.date));
+      key = w[0] + '-W' + w[1];
+      label = weekRangeLabel(w[0], w[1]);
+      sub = w[0] + '·W' + w[1];
+    } else if (SIDE_MODE === 'month'){
+      key = r.date.slice(0, 7);
+      var p = r.date.split('-');
+      label = parseInt(p[1],10) + '月';
+      sub = p[0] + '年';
+    } else { // year
+      key = r.date.slice(0, 4);
+      label = key + '年';
+      sub = '';
+    }
+    if (!map[key]) { map[key] = {key: key, label: label, sub: sub, items: [], moodSum: 0}; order.push(key); }
+    map[key].items.push(r);
+    map[key].moodSum += r.mood;
+  });
+  return order.map(function(k){ var g = map[k]; g.avg = Math.round(g.moodSum / g.items.length); g.n = g.items.length; return g; });
+}
+
+function renderSide(){
+  var groups = aggregate(ALL_ROWS);
+  var el = document.getElementById('sideDates');
+  el.innerHTML = '';
+  groups.forEach(function(g){
+    var active = false;
+    if (SIDE_MODE === 'day') active = (CURRENT_DATE === g.date);
+    else active = (SIDE_KEY === g.key);
+    var btn = document.createElement('div');
+    btn.className = 'side-date' + (active ? ' active' : '');
+    var head = SIDE_MODE === 'day'
+      ? '<span class="sd-day">'+g.label+'</span><span class="sd-ym">'+g.sub+'</span>'
+      : '<span class="sd-day sd-day-wide">'+g.label+'</span><span class="sd-ym">'+g.sub+'</span>';
+    btn.innerHTML = head +
+      '<span class="sd-emoji">'+emojiFor(g.avg)+'</span>'+
+      '<span class="sd-n">'+g.n+'条</span>';
+    btn.onclick = function(){
+      if (SIDE_MODE === 'day'){
+        CURRENT_DATE = (CURRENT_DATE === g.date ? null : g.date);
+        SIDE_KEY = null;
+      } else {
+        SIDE_KEY = (SIDE_KEY === g.key ? null : g.key);
+        CURRENT_DATE = null;
+      }
+      renderSide(); renderList();
+    };
+    el.appendChild(btn);
+  });
+  if (groups.length === 0) el.innerHTML = '<div style="color:#adb5bd;font-size:13px;padding:10px 0">还没有日记，从今天开始吧。</div>';
+}
+
+// 主列表是否应包含该行
+function passFilter(r){
+  if (SIDE_MODE === 'day') return (!CURRENT_DATE) || r.date === CURRENT_DATE;
+  if (!SIDE_KEY) return true;
+  if (SIDE_MODE === 'week'){
+    var w = isoWeek(parseDate(r.date));
+    return (w[0] + '-W' + w[1]) === SIDE_KEY;
+  }
+  if (SIDE_MODE === 'month') return r.date.slice(0, 7) === SIDE_KEY;
+  if (SIDE_MODE === 'year') return r.date.slice(0, 4) === SIDE_KEY;
+  return true;
+}
+
+function renderList(){
+  var rows = ALL_ROWS.filter(passFilter);
+  var el = document.getElementById('diaryList');
+  var tip = '全部日期';
+  if (SIDE_MODE === 'day' && CURRENT_DATE) tip = '📅 ' + CURRENT_DATE;
+  else if (SIDE_MODE === 'week' && SIDE_KEY){
+    var pp = SIDE_KEY.split('-W'); tip = '🗓 第' + pp[1] + '周（' + weekRangeLabel(+pp[0], +pp[1]) + '）';
+  }
+  else if (SIDE_MODE === 'month' && SIDE_KEY) tip = '🗓 ' + SIDE_KEY;
+  else if (SIDE_MODE === 'year' && SIDE_KEY) tip = '🗓 ' + SIDE_KEY + '年';
+  document.getElementById('listTitle').textContent = tip;
+  document.getElementById('listEmpty').style.display = rows.length ? 'none' : '';
+  el.innerHTML = '';
+  groupByDate(rows).forEach(function(g){
+    var sec = document.createElement('div');
+    sec.className = 'diary-day';
+    var head = '<div class="diary-day-head"><b>'+g.date+'</b><span>'+g.items.length+'条 · 当日平均 '+emojiFor(g.avg)+'</span></div>';
+    var items = g.items.map(function(r){
+      return '<div class="diary-item"><span class="diary-emoji">'+emojiFor(r.mood)+'</span>'+
+        '<div class="diary-body"><span class="diary-time">'+r.time+'</span>'+
+        '<p>'+(r.note ? r.note : '<i style="color:#ced4da">（未写备注）</i>')+'</p></div></div>';
+    }).join('');
+    sec.innerHTML = head + items;
+    el.appendChild(sec);
+  });
+}
+
+// ---- 曲线（周/月/年/全部，只含自己选择的心情）----
+function _initChart(el){
+  var ch = echarts.init(el, null, {width: el.clientWidth, height: el.clientHeight || 300});
+  setTimeout(function(){ ch.resize(); }, 60);
+  window.addEventListener('resize', function(){ ch.resize(); });
+  return ch;
+}
+var chart = null;
+function loadChart(range){
+  fetch('/api/mood?range=' + range).then(function(r){ return r.json(); }).then(function(d){
+    if (!chart) chart = _initChart(document.getElementById('moodChart'));
+    chart.setOption({
+      backgroundColor: 'transparent',
+      title: {text: '心情变化曲线（-5 ~ +5）', subtext: {week:'近7天',month:'近30天',year:'近365天',all:'全部记录'}[range] + ' · 数值为你亲自选择的心情',
+              textStyle: {fontSize: 15}, subtextStyle: {fontSize: 11, color: '#868e96'}},
+      tooltip: {trigger: 'axis', triggerOn: 'click', renderMode: 'richText', confine: true},
+      grid: {left: 42, right: 22, top: 78, bottom: 34, containLabel: true},
+      xAxis: {type: 'category', boundaryGap: false, data: d.labels, axisLabel: {fontSize: 11}},
+      yAxis: {type: 'value', min: -5, max: 5, splitNumber: 5},
+      series: [{
+        name: '心情', type: 'line', data: d.vals, smooth: true, symbol: 'circle', symbolSize: 8,
+        lineStyle: {color: '#ff6b6b', width: 3}, itemStyle: {color: '#ff6b6b'},
+        areaStyle: {color: 'rgba(255,107,107,.18)'},
+        markLine: {silent: true, symbol: 'none', lineStyle: {color: '#adb5bd', type: 'dashed'},
+          data: [{yAxis: 0, label: {formatter: '平静线', color: '#868e96', fontSize: 10}}]}
+      }]
+    }, true);
+  });
+}
+
+document.querySelectorAll('.rtab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.rtab').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    loadChart(btn.dataset.range);
   });
 });
+
+// 侧栏分组模式切换（按日/周/月/年）
+document.querySelectorAll('.stab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.stab').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    SIDE_MODE = btn.dataset.smode;
+    SIDE_KEY = null;
+    CURRENT_DATE = null;
+    renderSide(); renderList();
+  });
+});
+
+renderSide();
+renderList();
+loadChart('week');
 </script>
+
+<style>
+.mood-layout{display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start}
+.mood-main{min-width:0}
+.mood-side{position:sticky;top:12px}
+.mood-side-card{max-height:calc(100vh - 120px);overflow-y:auto}
+.mood-chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.range-tabs{display:flex;background:#fff5f5;border-radius:10px;padding:3px;gap:2px}
+.rtab{border:none;background:transparent;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#868e96;cursor:pointer;transition:.15s}
+.rtab.active{background:#ff6b6b;color:#fff}
+.mood-list-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.mood-list-tip{font-size:12.5px;color:#868e96}
+.side-date{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:.15s;border:1px solid transparent}
+.side-date:hover{background:#fff5f5}
+.side-date.active{background:#fff0ec;border-color:#ffc9c9}
+.sd-day{width:34px;height:34px;border-radius:10px;background:#ffe8e6;color:#e8590c;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sd-ym{font-size:12.5px;color:#868e96;flex:1;min-width:0}
+.sd-emoji{font-size:18px;flex-shrink:0}
+.sd-n{font-size:11.5px;color:#adb5bd;background:#f1f3f5;border-radius:8px;padding:2px 7px;flex-shrink:0}
+.side-tabs{display:flex;background:#fff5f5;border-radius:10px;padding:3px;gap:2px;margin-bottom:4px}
+.stab{border:none;background:transparent;padding:5px 0;flex:1;border-radius:7px;font-size:12px;font-weight:600;color:#868e96;cursor:pointer;transition:.15s}
+.stab.active{background:#ff6b6b;color:#fff}
+.sd-day-wide{width:auto;min-width:0;height:auto;min-height:34px;padding:6px 10px;font-size:12.5px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;border-radius:10px;background:#ffe8e6;color:#e8590c;flex-shrink:0}
+.diary-day{background:#fffaf7;border:1px solid #ffede3;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.diary-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:#868e96}
+.diary-day-head b{color:#e8590c;font-size:14px}
+.diary-item{display:flex;gap:10px;padding:8px 0;border-top:1px dashed #ffe8dc}
+.diary-item:first-of-type{border-top:none}
+.diary-emoji{font-size:22px}
+.diary-body{flex:1;min-width:0}
+.diary-time{font-size:11.5px;color:#adb5bd}
+.diary-body p{font-size:13.5px;color:#495057;line-height:1.7;margin:3px 0 0}
+@media (max-width: 900px){
+  .mood-layout{grid-template-columns:1fr}
+  .mood-side{position:static}
+}
+</style>
 {% endblock %}

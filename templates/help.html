@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}求助资源 · 心屿{% endblock %}
+{% block body %}
+<div class="hero-banner">
+  <h1>🆘 当你很难受时，这里有人可以帮你</h1>
+  <p>如果你正经历强烈的痛苦、自伤念头或危机，请不要独自承受。以下热线与资源都是真实、可拨打的。</p>
+</div>
+
+<div class="card" style="border-left:5px solid #c92a2a">
+  <h2 style="color:#c92a2a">24小时心理危机热线</h2>
+  <table class="tbl">
+    <tr><th>热线</th><th>号码</th><th>说明</th></tr>
+    <tr><td>全国心理援助热线</td><td><b style="font-size:18px;color:#c92a2a">12356</b></td><td>国家卫健委全国统一心理援助热线，24小时</td></tr>
+    <tr><td>希望24热线</td><td><b>400-161-9995</b></td><td>全国性生命教育与危机干预热线</td></tr>
+    <tr><td>北京心理危机研究与干预中心</td><td><b>010-82951332</b></td><td>24小时，专业自杀预防</td></tr>
+    <tr><td>12355青少年服务台</td><td><b>12355</b></td><td>共青团面向青少年的心理与法律热线</td></tr>
+    <tr><td>教育部华中师大心理热线</td><td><b>400-161-9995</b></td><td>面向全国学生的公益心理支持</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>📋 学校内可以找谁</h2>
+  <div class="feature-grid">
+    <div class="feature"><div class="ic">👩‍⚕️</div><h4>心理咨询中心</h4><p>本平台可在线预约，咨询师将一对一免费辅导</p><a class="btn btn-sm" href="{{ url_for('booking') }}">立即预约</a></div>
+    <div class="feature"><div class="ic">🤖</div><h4>AI倾听伙伴</h4><p>现在就想说说，可先与AI倾诉，随时在线</p><a class="btn btn-sm btn-sky" href="{{ url_for('chat') }}">去倾诉</a></div>
+    <div class="feature"><div class="ic">👨‍👩‍👧</div><h4>信任的人</h4><p>朋友、辅导员、家人，哪怕只是陪你坐一会儿</p></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🩺 什么时候需要就医</h2>
+  <ul style="margin:10px 0 0 20px;line-height:2;color:#495057">
+    <li>情绪低落、焦虑持续<strong>两周以上</strong>且影响睡眠、学习、饮食；</li>
+    <li>出现<strong>自伤、自杀念头</strong>——请立即拨打上方危机热线或前往医院急诊；</li>
+    <li>出现幻听、妄想等脱离现实的体验；</li>
+    <li>长期失眠、无法正常上课或生活。</li>
+  </ul>
+  <p style="margin-top:12px;color:#868e96;font-size:13px">可前往当地精神卫生中心或综合医院精神心理科就诊。早期干预效果更好。</p>
+</div>
+{% endblock %}

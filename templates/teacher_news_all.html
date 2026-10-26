@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}心理资讯 · 往期 · 心屿教师端{% endblock %}
+{% block body %}
+<div class="hero-banner" style="background:linear-gradient(120deg,#1c6dd9,#15aabf)">
+  <h1>📰 {{ active }} · 往期文章</h1>
+  <p>按栏目查看历史资讯，共 {{ total }} 篇（多页自动聚合，每30分钟刷新）。</p>
+</div>
+<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+  {% for sec in sections %}
+  <a class="btn {{ 'btn-ghost' if sec!=active else '' }}" href="{{ url_for('teacher_news_all', section=sec) }}">{{ sec }}</a>
+  {% endfor %}
+  <a class="btn btn-ghost" href="{{ url_for('teacher_news', section=active) }}">← 返回最新{{ active }}</a>
+  <span style="margin-left:auto;font-size:12px;color:#868e96">更新于 {{ news_t }} ·
+    {% if online %}<span style="color:#2b8a3e">● 实时在线</span>{% else %}<span style="color:#e8590c">● 离线精选</span>{% endif %}
+  </span>
+</div>
+<div class="card">
+  <table class="tbl">
+    <tr><th style="width:52%">标题</th><th>发布时间</th><th>信息源</th><th style="width:110px">操作</th></tr>
+    {% for it in rows %}
+    <tr>
+      <td>{{ it.title }}</td>
+      <td style="white-space:nowrap;color:#868e96">{{ it.date or '—' }}</td>
+      <td style="font-size:12px;color:#1971c2;white-space:nowrap">中国网心理频道</td>
+      <td>
+        <a class="btn btn-sm btn-sky" href="{{ url_for('teacher_article', url=it.url) }}">站内阅读</a>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" style="text-align:center;color:#adb5bd;padding:30px">暂无往期文章（离线环境使用内置精选）</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% if pages>1 %}
+<div class="pager" style="display:flex;gap:12px;justify-content:center;padding:16px 0">
+  {% if page>1 %}<a class="btn btn-sm btn-ghost" href="{{ url_for('teacher_news_all', section=active, page=page-1) }}">← 上一页</a>{% endif %}
+  <span style="font-size:13px;color:#868e96">第 {{ page }} / {{ pages }} 页</span>
+  {% if page<pages %}<a class="btn btn-sm btn-ghost" href="{{ url_for('teacher_news_all', section=active, page=page+1) }}">下一页 →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

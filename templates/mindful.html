@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}正念身体扫描 · 减压舱{% endblock %}
+{% block body %}
+<div class="card" style="max-width:720px;margin:0 auto;text-align:center">
+  <h2>🌿 正念身体扫描</h2>
+  <p style="color:#868e96;font-size:14px">闭上眼睛，把注意力像一束光，从头顶慢慢扫到脚底。只是觉察，不评判、不改变。</p>
+  <div id="part" style="font-size:24px;font-weight:700;color:#1971c2;margin:30px 0 10px">点击开始</div>
+  <div id="tip" style="font-size:15px;color:#495057;min-height:48px;max-width:520px;margin:0 auto;line-height:1.8"></div>
+  <div id="timer" style="font-size:14px;color:#868e96;margin-top:10px"></div>
+  <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
+    <button class="btn" id="go">开始扫描</button>
+    <a class="btn btn-ghost" href="{{ url_for('relax') }}">返回减压舱</a>
+  </div>
+</div>
+<script>
+var steps=[
+ ['头顶和面部','觉察额头、眉心、下巴是否紧绷，让它们自然舒展。'],
+ ['颈部和肩膀','很多压力都藏在这里。吸气时觉察，呼气时让肩膀沉下来。'],
+ ['手臂和双手','感受手臂的重量、手心的温度，松开紧握的拳头。'],
+ ['胸部和腹部','把手放在腹部，感受呼吸时腹部自然的起伏。'],
+ ['背部和腰部','感受背部与椅背/床面的接触，把重量交出去。'],
+ ['大腿和小腿','觉察双腿的沉重或轻松，不需要改变什么。'],
+ ['双脚和脚趾','感受脚底踩地的踏实感，把注意力安放在这里。'],
+ ['整个身体','现在把觉察扩展到全身，带着这份平静回到当下。']
+];
+var i=0,t=null,left=0;
+var part=document.getElementById('part'),tip=document.getElementById('tip'),timer=document.getElementById('timer');
+function show(){
+  if(i>=steps.length){ part.textContent='扫描完成 🌿'; tip.textContent='慢慢活动手指脚趾，睁开眼，把这份平静带回今天。'; timer.textContent=''; return; }
+  part.textContent=steps[i][0]; tip.textContent=steps[i][1]; left=20;
+  timer.textContent='停留 '+left+' 秒';
+  clearInterval(t); t=setInterval(function(){ left--; if(left<=0){clearInterval(t);i++;show();} else timer.textContent='停留 '+left+' 秒'; },1000);
+}
+document.getElementById('go').onclick=function(){ i=0; show(); this.style.display='none'; };
+</script>
+{% endblock %}

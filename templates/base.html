@@ -14,22 +14,25 @@
     <div class="nav-links">
       {% if u %}
         {% if u.role == 'student' %}
-          <a href="{{ url_for('chat') }}">AI倾诉</a>
+          <a href="{{ url_for('index') }}">首页</a>
           <a href="{{ url_for('assessments') }}">心理测评</a>
           <a href="{{ url_for('treehole') }}">匿名树洞</a>
-          <a href="{{ url_for('mood') }}">情绪曲线</a>
+          <a href="{{ url_for('mood') }}">情绪日记</a>
+          <a href="{{ url_for('relax') }}">减压舱</a>
           <a href="{{ url_for('booking') }}">预约咨询</a>
           <a href="{{ url_for('learn') }}">心理成长</a>
+          <a href="{{ url_for('chat') }}">AI倾诉</a>
         {% else %}
-          <a href="{{ url_for('teacher_home') }}">教师首页</a>
+          <a href="{{ url_for('teacher_home') }}">首页</a>
           <a href="{{ url_for('dash') }}">数据看板</a>
           <a href="{{ url_for('alerts') }}">预警工单</a>
           <a href="{{ url_for('manage_booking') }}">预约管理</a>
-          <a href="{{ url_for('treehole') }}">学生树洞</a>
-          <a href="{{ url_for('learn') }}">成长资源</a>
+          <a href="{{ url_for('teacher_treehole') }}">学生树洞</a>
+          <a href="{{ url_for('teacher_news') }}">心理资讯</a>
+          <a href="{{ url_for('teacher_journal') }}">心理月刊</a>
           <a href="{{ url_for('chat') }}">AI倾诉</a>
         {% endif %}
-        <span class="nav-user">👤 {{ u.real_name or u.username }}</span>
+        <a class="nav-user" href="{{ url_for('profile') }}" title="个人信息"><span class="nav-avatar-wrap">{{ avatar_html(u, cls="nav-avatar") | safe }}</span> {{ u.real_name or u.username }}</a>
         <a href="{{ url_for('logout') }}">退出</a>
       {% else %}
         <a href="{{ url_for('login') }}">登录</a>

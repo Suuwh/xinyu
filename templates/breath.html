@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}呼吸放松 · 心屿{% endblock %}
+{% block head %}
+<style>
+.breath-wrap{text-align:center;padding:34px 0 44px}
+.breath-circle{position:relative;width:250px;height:250px;border-radius:50%;margin:26px auto;
+  background:#fff4e6;border:5px solid #ffa94d;overflow:hidden;box-shadow:0 8px 28px rgba(255,107,107,.18)}
+.breath-fill{position:absolute;left:0;right:0;bottom:0;height:0%;
+  background:linear-gradient(180deg,#ffd43b,#ff6b6b);z-index:1}
+.breath-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:26px;font-weight:800;z-index:2;text-shadow:0 1px 6px rgba(0,0,0,.35);letter-spacing:2px}
+.phase{font-size:20px;color:#e8590c;font-weight:700;margin-top:18px}
+.tip{color:#868e96;font-size:14px;margin-top:10px}
+.breath-actions{display:flex;gap:12px;justify-content:center;margin-top:16px}
+</style>
+{% endblock %}
+{% block body %}
+<div class="card breath-wrap">
+  <h2>🫁 4-7-8 呼吸放松训练</h2>
+  <p class="tip">跟着圆圈节奏：吸气4秒 → 屏息7秒 → 呼气8秒，重复3轮即可平复焦虑。</p>
+  <div class="breath-circle" id="circle">
+    <div class="breath-fill" id="fill"></div>
+    <div class="breath-text" id="circ">准备</div>
+  </div>
+  <div class="phase" id="phase">点击开始</div>
+  <div class="breath-actions">
+    <button class="btn" id="startBtn">开始训练</button>
+    <a class="btn btn-ghost" href="{{ url_for('relax') }}">返回减压舱</a>
+  </div>
+</div>
+<script>
+var phases=[{t:'吸气',s:4,to:100},{t:'屏息',s:7,to:100},{t:'呼气',s:8,to:22}];
+var pi=0, running=false, timer=null;
+var fill=document.getElementById('fill');
+function tick(){
+  var p=phases[pi];
+  document.getElementById('circ').textContent=p.t;
+  document.getElementById('phase').textContent=p.t+' '+p.s+' 秒';
+  fill.style.transition='height '+p.s+'s linear';
+  fill.style.height=p.to+'%';
+  var left=p.s;
+  clearInterval(timer);
+  timer=setInterval(function(){
+    left--;
+    if(left<=0){clearInterval(timer); pi=(pi+1)%3; tick();}
+    else{document.getElementById('phase').textContent=p.t+' '+left+' 秒';}
+  },1000);
+}
+document.getElementById('startBtn').onclick=function(){
+  if(running){
+    clearInterval(timer); running=false; this.textContent='重新开始';
+    document.getElementById('phase').textContent='已暂停';
+    document.getElementById('circ').textContent='暂停';
+    return;
+  }
+  running=true; this.textContent='暂停'; pi=0; tick();
+};
+</script>
+{% endblock %}

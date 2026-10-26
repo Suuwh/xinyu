@@ -1,36 +1,278 @@
 {% extends "base.html" %}
 {% block title %}匿名树洞 · 心屿{% endblock %}
 {% block body %}
-<div class="hero-banner">
-  <h1>🌳 匿名树洞</h1>
-  <p>没有人知道你是谁。把不敢说的心事留在这里，会有人轻轻抱抱你。</p>
+<!-- 紧凑横幅：不再抢占大量纵向空间 -->
+<div class="th-hero">
+  <span class="th-hero-ic">🌳</span>
+  <div>
+    <h1>匿名树洞</h1>
+    <p>没有人知道你是谁。把不敢说的心事留在这里，会有人轻轻抱抱你。</p>
+  </div>
 </div>
-<div class="card">
-  <h3>📝 我要悄悄说…</h3>
-  <form method="post">
-    <label class="f">标题</label>
-    <input type="text" name="title" placeholder="给心事起个名字" required>
-    <label class="f">想说的话</label>
-    <textarea name="content" rows="3" placeholder="这里没人认识你，可以放心说…" required></textarea>
-    <label class="f">话题标签（用空格分隔）</label>
-    <input type="text" name="tags" placeholder="如：考试周 失眠 想家">
-    <button class="btn" style="margin-top:12px">扔进树洞 🕊</button>
+
+<div class="th-wrap">
+  <!-- 发布卡（紧凑布局） -->
+  <div class="th-post-card">
+    <form method="post" enctype="multipart/form-data" id="pubForm">
+      <div class="th-pub-row1">
+        <input type="text" name="title" placeholder="给心事起个名字（必填）" required>
+        <input type="text" name="tags" placeholder="话题标签，空格分隔，如：考试周 失眠" style="max-width:230px">
+      </div>
+      <textarea name="content" rows="2" placeholder="这里没人认识你，可以放心说…（必填）" required></textarea>
+      <div class="th-pub-row">
+        <label class="th-media-btn" for="mediaInput">🎬 添加图片 / 音频 / 视频</label>
+        <input type="file" id="mediaInput" name="media" accept=".jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.m4a,.ogg,.aac,.mp4,.webm,.mov" style="display:none">
+        <span class="th-media-tip" id="mediaTip"></span>
+        <button class="btn btn-sm" type="submit">扔进树洞 🕊</button>
+      </div>
+      <div class="th-preview" id="mediaPreview"></div>
+    </form>
+  </div>
+
+  <!-- 工具栏：视图切换 + 搜索 + 话题 -->
+  <div class="th-toolbar">
+    <div class="th-tabs">
+      <a class="th-tab {{ '' if my else 'active' }}" href="{{ url_for('treehole', q=q, tag=tag) }}">🌊 全部心事</a>
+      <a class="th-tab {{ 'active' if my else '' }}" href="{{ url_for('treehole', my=1) }}">🙋 我的树洞</a>
+    </div>
+    <form method="get" class="th-search">
+      {% if my %}<input type="hidden" name="my" value="1">{% endif %}
+      <input type="text" name="q" value="{{ q }}" placeholder="🔍 搜索树洞里的心事…">
+      <button class="btn btn-sm">搜索</button>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('treehole', my=1) if my else url_for('treehole') }}">重置</a>
+      <span class="th-count">{{ '我的' if my else '' }}共 {{ total }} 条心声</span>
+    </form>
+    {% if hot_tags %}
+    <div class="th-tags">
+      {% for t, n in hot_tags %}
+      <a class="tag {{ 'tag-orange' if tag==t else '' }}" href="{{ url_for('treehole', tag=t, my=1) if my else url_for('treehole', tag=t) }}">#{{ t }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 小红书式双列信息流 -->
+  <div class="th-feed">
+    {% for p in posts %}
+      {% if my %}
+      <div class="th-card th-card-mine" data-pid="{{ p.id }}" data-title="{{ p.title }}" data-content="{{ p.content }}" data-tags="{{ p.tags }}">
+        <div class="th-ops">
+          {% if p.hidden %}<span class="th-flag">🔒 仅自己可见</span>{% else %}<span class="th-flag">🌊 公开中</span>{% endif %}
+          <button type="button" class="th-op" data-act="edit">✏️ 编辑</button>
+          <button type="button" class="th-op" data-act="hide">{% if p.hidden %}👁 恢复公开{% else %}🙈 隐藏{% endif %}</button>
+          <button type="button" class="th-op th-op-danger" data-act="del">🗑 删除</button>
+        </div>
+        <div class="th-card-media" onclick="location.href='{{ url_for('treehole_detail', pid=p.id) }}'">
+          {% if p.media_kind == 'image' %}
+            <img src="{{ p.media_url }}" alt="树洞配图" loading="lazy">
+          {% elif p.media_kind == 'video' %}
+            <div class="th-video-ph"><span>🎬</span><em>视频树洞</em></div>
+          {% elif p.media_kind == 'audio' %}
+            <div class="th-audio-ph"><span>🎵</span><em>音频树洞</em></div>
+          {% else %}
+            <div class="th-text-ph"><span>{{ p.content[:18] }}</span></div>
+          {% endif %}
+        </div>
+        <div class="th-card-title" onclick="location.href='{{ url_for('treehole_detail', pid=p.id) }}'">{{ p.title }}</div>
+        <div class="th-card-content" onclick="location.href='{{ url_for('treehole_detail', pid=p.id) }}'">{{ p.content[:60] }}{% if p.content|length>60 %}…{% endif %}</div>
+        <div class="th-card-foot">
+          <span>❤️ {{ p.likes }}</span>
+          <span class="th-card-time">{{ p.created_at.strftime('%m-%d') }}</span>
+        </div>
+      </div>
+      {% else %}
+      <a class="th-card" href="{{ url_for('treehole_detail', pid=p.id) }}">
+        <div class="th-card-media">
+          {% if p.media_kind == 'image' %}
+            <img src="{{ p.media_url }}" alt="树洞配图" loading="lazy">
+          {% elif p.media_kind == 'video' %}
+            <div class="th-video-ph"><span>🎬</span><em>视频树洞</em></div>
+          {% elif p.media_kind == 'audio' %}
+            <div class="th-audio-ph"><span>🎵</span><em>音频树洞</em></div>
+          {% else %}
+            <div class="th-text-ph"><span>{{ p.content[:18] }}</span></div>
+          {% endif %}
+        </div>
+        <div class="th-card-title">{{ p.title }}</div>
+        <div class="th-card-content">{{ p.content[:60] }}{% if p.content|length>60 %}…{% endif %}</div>
+        <div class="th-card-foot">
+          <span>❤️ {{ p.likes }}</span>
+          <span class="th-card-time">{{ p.created_at.strftime('%m-%d') }}</span>
+        </div>
+      </a>
+      {% endif %}
+    {% else %}
+    <div class="th-empty">
+      {% if my %}你还没有发布过树洞心事，写下第一条吧 🌱{% else %}暂时还没有树洞心事，来说第一句吧 🌱{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if pages>1 %}
+  <div class="pager">
+    {% if page>1 %}<a class="btn btn-sm btn-ghost" href="{{ url_for('treehole', q=q, tag=tag, page=page-1, my=1) if my else url_for('treehole', q=q, tag=tag, page=page-1) }}">← 上一页</a>{% endif %}
+    <span style="font-size:13px;color:#868e96">第 {{ page }} / {{ pages }} 页</span>
+    {% if page<pages %}<a class="btn btn-sm btn-ghost" href="{{ url_for('treehole', q=q, tag=tag, page=page+1, my=1) if my else url_for('treehole', q=q, tag=tag, page=page+1) }}">下一页 →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- 编辑弹窗 -->
+<div class="th-mask" id="editMask"></div>
+<div class="th-modal" id="editModal" role="dialog" aria-modal="true">
+  <h3>✏️ 编辑树洞帖子</h3>
+  <form method="post" id="editForm" action="">
+    <input type="text" name="title" id="editTitle" placeholder="给心事起个名字（必填）" required>
+    <textarea name="content" id="editContent" rows="4" placeholder="这里没人认识你，可以放心说…（必填）" required></textarea>
+    <input type="text" name="tags" id="editTags" placeholder="话题标签，空格分隔">
+    <div class="th-modal-actions">
+      <button type="button" class="btn btn-ghost" id="editNo">取消</button>
+      <button type="submit" class="btn">保存修改</button>
+    </div>
   </form>
 </div>
 
-<div class="masonry">
-  {% for p in posts %}
-  <div class="mcard">
-    <a href="{{ url_for('treehole_detail', pid=p.id) }}" style="color:#343a40">
-      <div style="font-weight:700;margin-bottom:8px">📌 {{ p.title }}</div>
-      <div style="font-size:14px;color:#495057;line-height:1.7">{{ p.content[:120] }}{% if p.content|length>120 %}…{% endif %}</div>
-      {% if p.crisis_flag %}<div style="margin-top:8px"><span class="tag tag-red">⚠️ 已被关注</span></div>{% endif %}
-    </a>
-    <div style="margin-top:10px;font-size:12px;color:#adb5bd">
-      {{ p.nickname }} · {{ p.created_at.strftime('%m-%d') }} · ❤️ {{ p.likes }}
-      {% if p.tags %}<br>{% for t in p.tags.split() %}<span class="tag" style="font-size:11px;margin-top:4px">#{{ t }}</span>{% endfor %}{% endif %}
-    </div>
+<!-- 删除确认弹窗 -->
+<div class="th-mask" id="delMask"></div>
+<div class="th-modal" id="delModal" role="dialog" aria-modal="true">
+  <div class="th-del-icon">🗑️</div>
+  <h3>确认删除这条帖子？</h3>
+  <p>删除后帖子与全部评论将不可恢复，请谨慎操作。</p>
+  <div class="th-modal-actions">
+    <button type="button" class="btn btn-ghost" id="delNo">再想想</button>
+    <form method="post" id="delForm" action="">
+      <button type="submit" class="btn btn-danger">确认删除</button>
+    </form>
   </div>
-  {% endfor %}
 </div>
+
+<script>
+(function(){
+  /* 媒体选择预览 */
+  var input = document.getElementById('mediaInput');
+  var tip = document.getElementById('mediaTip');
+  var preview = document.getElementById('mediaPreview');
+  input.addEventListener('change', function(){
+    var f = input.files && input.files[0];
+    if (!f) { tip.textContent = ''; preview.innerHTML = ''; return; }
+    var ext = (f.name.split('.').pop() || '').toLowerCase();
+    if (f.size > 25*1024*1024) { tip.textContent = '⚠ 文件超过 25MB'; input.value=''; return; }
+    var imgExts=['jpg','jpeg','png','gif','webp'], audExts=['mp3','wav','m4a','ogg','aac'], vidExts=['mp4','webm','mov','m4v'];
+    var kind = imgExts.indexOf(ext)>=0 ? 'image' : (audExts.indexOf(ext)>=0 ? 'audio' : (vidExts.indexOf(ext)>=0 ? 'video' : ''));
+    if (!kind) { tip.textContent = '⚠ 不支持的格式'; input.value=''; return; }
+    var sizeMB = (f.size/1024/1024).toFixed(1);
+    tip.textContent = (kind==='image'?'🖼 图片':(kind==='audio'?'🎵 音频':'🎬 视频'))+'：'+f.name+'（'+sizeMB+'MB）';
+    if (kind === 'image' && window.FileReader) {
+      var rd = new FileReader();
+      rd.onload = function(){ preview.innerHTML = '<img src="'+rd.result+'" alt="预览">'; };
+      rd.readAsDataURL(f);
+    } else {
+      preview.innerHTML = '<div class="th-preview-note">已选择 '+(kind==='audio'?'音频':'视频')+'，提交后即可发布</div>';
+    }
+  });
+
+  /* 我的帖子：编辑 / 隐藏 / 删除 */
+  var editModal = document.getElementById('editModal');
+  var editMask = document.getElementById('editMask');
+  var delModal = document.getElementById('delModal');
+  var delMask = document.getElementById('delMask');
+  function open(el, mask){ el.style.display='block'; mask.style.display='block'; }
+  function close(el, mask){ el.style.display='none'; mask.style.display='none'; }
+  document.getElementById('editNo').onclick=function(){ close(editModal, editMask); };
+  editMask.onclick=function(){ close(editModal, editMask); };
+  document.getElementById('delNo').onclick=function(){ close(delModal, delMask); };
+  delMask.onclick=function(){ close(delModal, delMask); };
+
+  var ops = document.querySelectorAll('.th-card-mine .th-op');
+  for (var i=0;i<ops.length;i++){
+    ops[i].addEventListener('click', function(){
+      var card = this.closest('.th-card-mine');
+      var pid = card.dataset.pid;
+      if (this.dataset.act === 'edit') {
+        document.getElementById('editForm').action = '/treehole/'+pid+'/edit';
+        document.getElementById('editTitle').value = card.dataset.title;
+        document.getElementById('editContent').value = card.dataset.content;
+        document.getElementById('editTags').value = card.dataset.tags || '';
+        open(editModal, editMask);
+      } else if (this.dataset.act === 'hide') {
+        var f = document.createElement('form');
+        f.method = 'post'; f.action = '/treehole/'+pid+'/hide';
+        document.body.appendChild(f); f.submit();
+      } else if (this.dataset.act === 'del') {
+        document.getElementById('delForm').action = '/treehole/'+pid+'/delete';
+        open(delModal, delMask);
+      }
+    });
+  }
+})();
+</script>
+
+<style>
+/* 紧凑横幅 */
+.th-hero{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#ff6b6b,#ff922b);border-radius:16px;padding:14px 22px;margin:0 auto 16px;max-width:860px;color:#fff}
+.th-hero-ic{font-size:30px}
+.th-hero h1{font-size:20px;margin:0}
+.th-hero p{margin:3px 0 0;font-size:13px;opacity:.92;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.55}
+.th-wrap{max-width:860px;margin:0 auto}
+/* 发布卡紧凑 */
+.th-post-card{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 4px 16px rgba(255,107,107,.08);border:1px solid #ffe3e3;margin-bottom:12px}
+.th-pub-row1{display:flex;gap:10px;margin-bottom:8px}
+.th-post-card input[type=text],.th-post-card textarea{width:100%;padding:9px 12px;border:1px solid #e0e6ed;border-radius:10px;font-size:14px;box-sizing:border-box}
+.th-post-card textarea{margin-bottom:8px;resize:vertical}
+.th-post-card input:focus,.th-post-card textarea:focus{outline:none;border-color:#ff8787}
+.th-pub-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.th-media-btn{display:inline-block;padding:7px 13px;border:1.5px dashed #ffa8a8;border-radius:10px;color:#e8590c;font-size:12.5px;font-weight:600;cursor:pointer;background:#fffaf7;transition:.15s}
+.th-media-btn:hover{background:#fff0ec}
+.th-media-tip{font-size:12.5px;color:#868e96;flex:1}
+.th-preview img{max-width:160px;max-height:160px;border-radius:10px;margin-top:10px;display:block}
+.th-preview-note{font-size:12.5px;color:#2b8a3e;margin-top:8px}
+/* 工具栏 */
+.th-toolbar{background:#fff;border-radius:14px;padding:12px 16px;box-shadow:0 3px 12px rgba(255,107,107,.06);margin-bottom:14px}
+.th-tabs{display:flex;gap:8px;margin-bottom:10px}
+.th-tab{padding:6px 16px;border-radius:10px;font-size:13.5px;font-weight:600;color:#868e96;background:#f8f9fa;transition:.15s}
+.th-tab:hover{color:#e8590c}
+.th-tab.active{background:linear-gradient(90deg,#ff6b6b,#ff922b);color:#fff}
+.th-search{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.th-search input{flex:1;min-width:180px;padding:8px 14px;border:1px solid #e0e6ed;border-radius:10px;font-size:14px}
+.th-count{font-size:12.5px;color:#868e96;margin-left:auto}
+.th-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+/* 双列流 */
+.th-feed{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:640px){.th-feed{grid-template-columns:1fr}}
+.th-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(255,107,107,.07);border:1px solid #ffece6;display:flex;flex-direction:column;transition:.15s}
+a.th-card:hover{box-shadow:0 8px 22px rgba(255,107,107,.14);transform:translateY(-2px)}
+.th-card-media{height:132px;background:linear-gradient(135deg,#fff0ec,#ffe8e6);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+.th-card-media img{width:100%;height:100%;object-fit:cover}
+.th-text-ph{font-size:13.5px;color:#e8590c;font-weight:600;padding:0 14px;text-align:center;line-height:1.6}
+.th-audio-ph{text-align:center;color:#e8590c}
+.th-audio-ph span{font-size:28px;display:block}
+.th-audio-ph em{font-style:normal;font-size:12.5px}
+.th-video-ph{text-align:center;color:#1c6dd9}
+.th-video-ph span{font-size:28px;display:block}
+.th-video-ph em{font-style:normal;font-size:12.5px}
+.th-card-title{font-size:14px;font-weight:700;color:#343a40;padding:10px 12px 4px;line-height:1.45;cursor:pointer}
+.th-card-content{font-size:12.5px;color:#868e96;padding:0 12px;line-height:1.7;flex:1;cursor:pointer}
+.th-card-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 10px;font-size:12px;color:#adb5bd;border-top:1px solid #fff1ea;margin-top:8px}
+.th-card-time{font-size:11.5px}
+/* 我的树洞操作条 */
+.th-ops{display:flex;align-items:center;gap:6px;padding:8px 10px 2px;flex-wrap:wrap}
+.th-flag{font-size:11.5px;color:#868e96;background:#f1f3f5;border-radius:8px;padding:2px 8px;margin-right:auto}
+.th-op{border:1px solid #ffe0d0;background:#fffaf7;color:#e8590c;font-size:12px;border-radius:8px;padding:3px 10px;cursor:pointer;transition:.15s}
+.th-op:hover{background:#fff0ec;border-color:#ffa8a8}
+.th-op-danger{border-color:#ffc9c9;color:#e03131}
+.th-op-danger:hover{background:#fff5f5;border-color:#ff8787}
+.th-empty{grid-column:1/-1;text-align:center;color:#adb5bd;padding:48px 0;font-size:14px}
+/* 弹窗 */
+.th-mask{position:fixed;inset:0;background:rgba(30,30,30,.45);display:none;z-index:120}
+.th-modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:22px 24px;width:min(480px,92vw);display:none;z-index:121;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.th-modal h3{margin:0 0 12px;font-size:16px;color:#343a40}
+.th-modal input[type=text],.th-modal textarea{width:100%;padding:9px 12px;border:1px solid #e0e6ed;border-radius:10px;font-size:14px;box-sizing:border-box;margin-bottom:10px}
+.th-modal input:focus,.th-modal textarea:focus{outline:none;border-color:#ff8787}
+.th-modal-actions{display:flex;justify-content:flex-end;gap:10px}
+.th-del-icon{font-size:30px;text-align:center;margin-bottom:6px}
+.th-modal p{font-size:13.5px;color:#868e96;text-align:center;margin:6px 0 14px}
+.btn-danger{background:#fa5252}
+.btn-danger:hover{background:#e03131}
+.pager{display:flex;gap:12px;align-items:center;justify-content:center;padding:14px 0}
+</style>
 {% endblock %}

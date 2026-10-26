@@ -2,26 +2,98 @@
 {% block title %}注册 · 心屿{% endblock %}
 {% block body %}
 <div class="auth-wrap">
-  <div class="card">
+  <div class="card" style="max-width:520px">
     <div class="auth-title">开启你的心屿之旅 ✨</div>
-    <div class="auth-sub">只需要一点点信息，我们就陪你开始</div>
-    <form method="post">
-      <label class="f">用户名（登录用）</label>
-      <input type="text" name="username" required>
-      <label class="f">昵称</label>
+    <div class="auth-sub">请选择身份并完成注册，注册成功后首次登录需完善基本信息</div>
+
+    <!-- 身份切换 -->
+    <div class="role-switch">
+      <button type="button" class="role-btn active" data-role="student">🎓 我是学生</button>
+      <button type="button" class="role-btn" data-role="counselor">🏫 心理咨询师</button>
+    </div>
+
+    <form method="post" id="regForm">
+      <input type="hidden" name="role" id="roleInput" value="student">
+      <label class="f">👤 用户名（登录用）</label>
+      <input type="text" name="username" required placeholder="4-20位字母/数字">
+      <label class="f">😊 昵称</label>
       <input type="text" name="real_name" required>
-      <label class="f">密码</label>
-      <input type="password" name="password" required>
+      <label class="f">🔒 密码</label>
+      <input type="password" name="password" required minlength="6">
       <div style="display:flex;gap:10px">
-        <div style="flex:1"><label class="f">性别</label>
+        <div style="flex:1"><label class="f">⚧ 性别</label>
           <select name="gender"><option>保密</option><option>男</option><option>女</option></select></div>
-        <div style="flex:1"><label class="f">年级</label>
+        <div style="flex:1" id="gradeWrap"><label class="f">📖 年级</label>
           <select name="grade"><option>大一</option><option>大二</option><option>大三</option><option>大四</option></select></div>
       </div>
-      <label class="f">专业</label>
-      <input type="text" name="major" placeholder="如：软件工程">
-      <div style="margin-top:18px"><button class="btn" style="width:100%">创建账号</button></div>
+
+      <!-- 学生：专业 -->
+      <div id="stuExtra">
+        <label class="f">🔬 专业</label>
+        <input type="text" name="major" placeholder="如：软件技术">
+      </div>
+
+      <!-- 咨询师：资质认证 -->
+      <div id="couExtra" style="display:none;margin-top:4px">
+        <div class="cert-box">
+          <div class="cert-title">🔐 中国心理学会临床与咨询心理学注册系统认证</div>
+          <p class="cert-sub">依据《中国心理学会临床与咨询心理学工作伦理守则》，咨询师须通过注册系统认证方可入驻平台为学生提供咨询。以下为模拟认证流程，正式部署对接注册系统 OAuth。</p>
+          <label class="f">📱 注册系统账号（手机号/邮箱）</label>
+          <input type="text" name="chsi_no" placeholder="用于接收认证授权">
+          <label class="f">🆔 注册心理师编号</label>
+          <input type="text" name="cps_no" placeholder="如 X-22-001 / 注册编号">
+          <label class="f">🎖 职称</label>
+          <select name="teacher_title">
+            <option>心理咨询师</option><option>中级心理咨询师</option><option>高级心理咨询师</option>
+            <option>副教授</option><option>教授</option><option>督导</option>
+          </select>
+          <label class="f">🏛 所属部门 / 中心</label>
+          <input type="text" name="department" placeholder="如：学生心理健康教育与咨询中心">
+          <label class="f">🗂 擅长方向</label>
+          <input type="text" name="specialty" placeholder="如：抑郁焦虑、学业压力、人际关系">
+          <label class="f">📍 咨询地点</label>
+          <input type="text" name="location" placeholder="如：大学生活动中心 302 心理辅导室">
+          <label class="f">💬 个人简介</label>
+          <textarea name="intro" rows="3" placeholder="执业经历、咨询理念等"></textarea>
+        </div>
+      </div>
+
+      <div style="margin-top:18px"><button class="btn" style="width:100%">创建账号并进入认证</button></div>
+      <p style="text-align:center;margin-top:12px;font-size:13px;color:#868e96">
+        已有账号？<a href="{{ url_for('login') }}">直接登录</a></p>
     </form>
   </div>
 </div>
+
+<style>
+.auth-wrap{max-width:520px;margin:30px auto}
+.auth-title{font-size:24px;font-weight:800;text-align:center;color:var(--ink)}
+.auth-sub{font-size:13px;color:#868e96;text-align:center;margin:8px 0 18px}
+.role-switch{display:flex;gap:10px;margin-bottom:18px}
+.role-btn{flex:1;padding:12px 0;border:2px solid #eef2f7;background:#fff;border-radius:14px;font-size:15px;font-weight:700;color:#495057;cursor:pointer;transition:.2s}
+.role-btn.active{background:linear-gradient(120deg,#ff8787,#ff922b);color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(255,107,107,.25)}
+.cert-box{background:#f6f9ff;border:1px solid #d0e2ff;border-radius:14px;padding:16px;margin-top:10px}
+.cert-title{font-size:14.5px;font-weight:800;color:#1c3d6e;margin-bottom:6px}
+.cert-sub{font-size:12px;color:#5c6b7a;line-height:1.7;margin-bottom:12px}
+#couExtra .f{color:#1c3d6e}
+</style>
+<script>
+(function(){
+  var btns=document.querySelectorAll('.role-btn');
+  var roleInput=document.getElementById('roleInput');
+  var stu=document.getElementById('stuExtra');
+  var cou=document.getElementById('couExtra');
+  var grade=document.getElementById('gradeWrap');
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){
+      btns.forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      var r=b.dataset.role;
+      roleInput.value=r;
+      if(r==='counselor'){stu.style.display='none';cou.style.display='block';grade.style.display='none';}
+      else{stu.style.display='block';cou.style.display='none';grade.style.display='block';}
+    });
+  });
+})();
+</script>
 {% endblock %}

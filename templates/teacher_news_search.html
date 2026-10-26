@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}资讯搜索 · 心屿教师端{% endblock %}
+{% block body %}
+<div class="hero-banner" style="background:linear-gradient(120deg,#1c6dd9,#15aabf)">
+  <h1>🔍 资讯搜索</h1>
+  <p>先在本站已聚合的资讯中查找；若无命中，将跳转公网搜索最贴近、最可靠的结果。</p>
+</div>
+
+<div class="card" style="padding:16px 20px">
+  <form method="get" action="{{ url_for('teacher_news_search') }}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <input type="text" name="q" value="{{ q }}" placeholder="输入关键词，如：抑郁、睡眠、教师心理…" style="flex:1;min-width:220px;padding:11px 15px;border:1px solid #e0e6ed;border-radius:11px;font-size:14px">
+    <button class="btn">搜索</button>
+    <a class="btn btn-ghost" href="{{ url_for('teacher_news') }}">返回资讯</a>
+  </form>
+</div>
+
+{% if found %}
+<div class="card">
+  <h3 style="font-size:15.5px;color:#1c3d6e">✅ 本站已收录以下相关资讯（{{ hits|length }} 条）</h3>
+  <table class="tbl">
+    <tr><th style="width:52%">标题</th><th>发布时间</th><th>信息源</th><th style="width:110px">操作</th></tr>
+    {% for it in hits %}
+    <tr>
+      <td>{{ it.title }}</td>
+      <td style="white-space:nowrap;color:#868e96">{{ it.date or '—' }}</td>
+      <td style="font-size:12px;color:#1971c2;white-space:nowrap">{{ it.source }}</td>
+      <td><a class="btn btn-sm btn-sky" href="{{ url_for('teacher_article', url=it.url) }}">站内阅读</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:34px 20px">
+  <div style="font-size:34px;margin-bottom:10px">🌐</div>
+  <h3 style="font-size:16px;color:#495057;margin-bottom:6px">本站暂无「{{ q }}」的资讯收录</h3>
+  <p style="font-size:13.5px;color:#868e96;margin-bottom:18px">
+    已为你打开公网检索，从下方入口进入后，将优先展示来源最可靠（中国网心理频道）的相关结果。
+  </p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a class="btn" target="_blank" rel="noopener" href="{{ baidu }}" style="background:linear-gradient(120deg,#1c6dd9,#15aabf);border:none">🔎 百度 · 站点内检索</a>
+    <a class="btn btn-ghost" target="_blank" rel="noopener" href="{{ bing }}">🔎 必应 · 站点内检索</a>
+  </div>
+  <p style="font-size:12px;color:#adb5bd;margin-top:16px">公网结果为外部站点内容，以原网页展示为准；本平台不转存第三方正文。</p>
+</div>
+{% endif %}
+{% endblock %}

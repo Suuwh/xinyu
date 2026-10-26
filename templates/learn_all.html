@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}{{ tabs[tab] }} · 全部 · 心屿{% endblock %}
+{% block body %}
+<div class="wrap">
+  <div class="page-head">
+    <h2>🌱 {{ tabs[tab] }} · 全部</h2>
+    <p>共 {{ total }} 条内容{% if q %}，搜索“{{ q }}”{% endif %}</p>
+  </div>
+
+  <div class="sub-tabs">
+    {% for k, name in tabs.items() %}
+    <a class="sub-tab {% if k==tab %}active{% endif %}" href="{{ url_for('learn_all', tab=k) }}">{{ name }}</a>
+    {% endfor %}
+  </div>
+
+  <form class="search-bar" method="get" action="{{ url_for('learn_all', tab=tab) }}">
+    <input type="text" name="q" value="{{ q }}" placeholder="搜索标题、关键词或来源…">
+    <button class="btn" type="submit">🔍 搜索</button>
+    {% if q %}<a class="btn btn-ghost" href="{{ url_for('learn_all', tab=tab) }}">清除</a>{% endif %}
+  </form>
+
+  {% if items|length == 0 %}
+  <div class="empty">没有找到相关内容，换个关键词试试吧。</div>
+  {% elif tab == 'article' %}
+    <div class="post-grid">
+      {% for it in items %}
+      <a class="pcard {% if it.is_live %}live{% endif %}"
+         href="{% if it.is_live %}{{ url_for('reader') }}?url={{ it.url|urlencode }}{% else %}{{ url_for('learn_post', rid=it.rid) }}{% endif %}">
+        {% if it.is_live %}<span class="live-badge">实时</span>{% endif %}
+        <h4>{{ it.title }}</h4>
+        <p>{{ it.summary }}</p>
+        <div class="m-meta"><span>{{ it.source }}</span><span>{{ it.date }}</span></div>
+      </a>
+      {% endfor %}
+    </div>
+  {% elif tab == 'video' %}
+    <div class="video-grid">
+      {% for it in items %}
+      <a class="vcard" href="{{ it.url or url_for('learn_post', rid=it.rid) }}" target="{{ '_blank' if it.url else '_self' }}">
+        <div class="v-thumb"><span class="v-play"></span><em>视频</em></div>
+        <h4>{{ it.title }}</h4>
+        <p>{{ it.summary }}</p>
+        <div class="v-watch">▶ {{ '前往平台观看' if it.url else '查看内容介绍' }}</div>
+        <div class="m-meta"><span>{{ it.author }}</span><span>{{ it.source }}</span></div>
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="book-grid">
+      {% for it in items %}
+      <a class="book-card" href="{{ url_for('learn_post', rid=it.rid) }}">
+        {% if it.cover %}
+        <div class="book-cover"><img src="{{ url_for('static', filename=it.cover) }}" alt="{{ it.title }} 封面" loading="lazy"></div>
+        {% else %}
+        <div class="book-cover">📖</div>
+        {% endif %}
+        <h4>{{ it.title }}</h4>
+        <p class="book-sum">{{ it.summary }}</p>
+        <div class="m-meta"><span>{{ it.source }}</span></div>
+      </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if pages > 1 %}
+  <div class="pager">
+    {% if page > 1 %}<a href="{{ url_for('learn_all', tab=tab, q=q, page=page-1) }}">上一页</a>{% endif %}
+    <span class="pg-info">第 {{ page }} / {{ pages }} 页</span>
+    {% if page < pages %}<a href="{{ url_for('learn_all', tab=tab, q=q, page=page+1) }}">下一页</a>{% endif %}
+  </div>
+  {% endif %}
+
+  <div style="text-align:center;margin:18px 0">
+    <a class="btn btn-ghost" href="{{ url_for('learn', tab=tab) }}">← 返回心理成长</a>
+  </div>
+</div>
+<style>
+.sub-tabs{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap}
+.sub-tab{padding:8px 20px;border-radius:20px;background:#fff;color:#666;font-size:14px;font-weight:600;border:1px solid #eee}
+.sub-tab.active{background:linear-gradient(120deg,#ff8787,#ff6b6b);color:#fff;border-color:transparent}
+.post-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;align-items:start}
+.pcard{background:#fff;border-radius:16px;padding:18px;box-shadow:0 4px 14px rgba(33,99,180,.06);display:block;position:relative;border:1px solid #f1f4f8}
+.pcard h4{font-size:15px;color:#343a40;line-height:1.55;margin-bottom:8px;font-weight:700}
+.pcard p{font-size:13px;color:#868e96;line-height:1.7;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pcard .m-meta{display:flex;justify-content:space-between;font-size:11.5px;color:#adb5bd;border-top:1px solid #f5f7fa;padding-top:9px;gap:8px}
+.live-badge{position:absolute;top:14px;right:14px;background:linear-gradient(120deg,#51cf66,#37b24d);color:#fff;font-size:10.5px;padding:2px 9px;border-radius:10px;font-weight:600}
+.pcard.live{border-color:#d3f9d8}
+.pcard.live h4{padding-right:46px}
+.search-bar{display:flex;gap:10px;margin-bottom:20px}
+.search-bar input{flex:1;padding:12px 16px;border:1px solid #e0e6ed;border-radius:12px;font-size:14px}
+.search-bar input:focus{outline:none;border-color:#ff8787}
+.book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.book-card{background:#fff;border-radius:16px;padding:18px;text-align:center;box-shadow:0 4px 14px rgba(33,99,180,.06)}
+.book-cover{font-size:44px;margin-bottom:10px;height:168px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,#f1f6ff,#e8f1fb);border-radius:10px}
+.book-cover img{width:auto;max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 4px 14px rgba(0,0,0,.16);border-radius:4px}
+.book-card h4{font-size:15px;color:#343a40;margin-bottom:6px}
+.book-card p{font-size:12px;color:#868e96;line-height:1.6;min-height:36px}
+.book-card .book-sum{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;min-height:76px}
+.book-card .m-meta{justify-content:center}
+.book-card .m-meta span{color:#1971c2;font-size:11.5px}
+.v-watch{display:inline-block;background:linear-gradient(120deg,#ff6b6b,#ff922b);color:#fff;font-size:12px;font-weight:700;padding:5px 14px;border-radius:14px;margin:4px 0 8px}
+.vcard .m-meta{display:flex;justify-content:space-between;font-size:11.5px;color:#adb5bd;border-top:1px solid #f5f7fa;padding-top:8px;gap:8px}
+.vcard .m-meta span{color:#868e96}
+.video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.vcard{background:#fff;border-radius:16px;padding:14px;box-shadow:0 4px 14px rgba(33,99,180,.06);display:block;border:1px solid #f1f4f8;transition:.15s}
+.vcard:hover{box-shadow:0 8px 22px rgba(33,99,180,.12);transform:translateY(-2px)}
+.v-thumb{height:128px;border-radius:12px;background:linear-gradient(135deg,#74c0fc,#4dabf7);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;margin-bottom:12px}
+.v-play{width:0;height:0;border-style:solid;border-width:13px 0 13px 22px;border-color:transparent transparent transparent rgba(255,255,255,.95);margin-left:6px}
+.v-thumb em{font-style:normal;font-size:12px;margin-top:8px;opacity:.92;letter-spacing:2px}
+.vcard h4{font-size:15px;color:#343a40;margin-bottom:5px;line-height:1.5}
+.vcard p{font-size:12.5px;color:#868e96;line-height:1.6;min-height:38px}
+.pager{display:flex;justify-content:center;align-items:center;gap:16px;margin:28px 0}
+.pager a{padding:8px 18px;border-radius:10px;background:#fff;border:1px solid #e0e6ed;font-size:14px;color:#4263eb}
+.pg-info{font-size:13px;color:#868e96}
+</style>
+{% endblock %}

@@ -5,8 +5,35 @@
   <h1 style="font-size:24px">{{ r.title }}</h1>
   <div style="color:#adb5bd;font-size:13px;margin:10px 0 18px">
     ✍️ {{ r.author }} · {{ r.created_at.strftime('%Y-%m-%d') }}
-    {% if r.source %}｜来源：<a href="#" onclick="return false">{{ r.source }}</a>{% endif %}
+    {% if r.source %}｜来源：{{ r.source }}{% endif %}
   </div>
+  {% if r.kind == 'video' %}
+  <div style="background:linear-gradient(135deg,#f3f9ff,#fff3e6);border:1px dashed #a5d8ff;border-radius:16px;padding:16px 18px;margin-bottom:16px">
+    <div style="font-size:14.5px;font-weight:700;color:#1c4e80;margin-bottom:6px">🎬 本页为内容介绍 · 视频需前往原平台观看</div>
+    <div style="font-size:13px;color:#495057;line-height:1.7;margin-bottom:12px">
+      以下视频与音频引导均来自公开渠道（TED 官方演讲 / 哔哩哔哩等平台）。点击下方按钮即可前往原网页观看——
+      本平台不缓存或转载视频文件，保证内容来源真实可追溯。
+    </div>
+    <a class="btn" target="_blank" rel="noopener" href="{{ r.url or 'https://www.ted.com/talks' }}" style="background:linear-gradient(120deg,#ff6b6b,#ff922b);border:none">
+      ▶ 前往原网页观看{{ '' if r.url else '（TED 官方）' }}
+    </a>
+  </div>
+  {% elif r.kind == 'book' %}
+  <div style="display:flex;gap:20px;background:linear-gradient(135deg,#fff3e6,#ffe8f0);border:1px dashed #ffc9c9;border-radius:16px;padding:16px 18px;margin-bottom:16px;flex-wrap:wrap">
+    {% if r.cover %}
+    <img src="{{ url_for('static', filename=r.cover) }}" alt="{{ r.title }} 封面" style="width:110px;height:auto;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.16)">
+    {% endif %}
+    <div style="flex:1;min-width:200px">
+      <div style="font-size:14.5px;font-weight:700;color:#8a4b2d;margin-bottom:6px">📚 书籍信息</div>
+      <div style="font-size:13.5px;color:#495057;line-height:1.9">
+        <b>书名：</b>{{ r.title }}<br>
+        {% if r.author %}<b>推荐 / 出品：</b>{{ r.author }}<br>{% endif %}
+        {% if r.source %}<b>出版 / 发行：</b>{{ r.source }}<br>{% endif %}
+        <b>内容简介：</b>详见下方正文。
+      </div>
+    </div>
+  </div>
+  {% endif %}
   <div style="white-space:pre-wrap;line-height:1.9;font-size:15px">{{ r.content }}</div>
   <hr style="border:none;border-top:1px solid #fff1e6;margin:22px 0">
   <p style="font-size:12px;color:#adb5bd">

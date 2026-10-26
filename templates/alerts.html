@@ -1,26 +1,205 @@
 {% extends "base.html" %}
-{% block title %}预警工单 · 心屿{% endblock %}
+{% block title %}预警中心 · 心屿{% endblock %}
 {% block body %}
-<div class="card">
-  <h2>🚨 心理预警工单</h2>
-  <p style="color:#868e96;font-size:13px">AI对话、量表、树洞三路自动识别，按严重程度置顶。</p>
-  <table class="tbl">
-    <tr><th>时间</th><th>学生</th><th>来源</th><th>触发内容</th><th>级别</th><th>状态</th><th>处理</th></tr>
-    {% for r in rows %}
-    <tr>
-      <td>{{ r.created_at.strftime('%m-%d %H:%M') }}</td>
-      <td>{{ users.get(r.user_id,'') }}</td>
-      <td>{{ {'chat':'AI对话','treehole':'树洞','assessment':'量表'}.get(r.source,r.source) }}</td>
-      <td>{{ r.content[:60] }}</td>
-      <td><span class="tag tag-red">{{ '高危' if r.level=='high' else '关注' }}</span></td>
-      <td><span class="tag {{ 'tag-green' if r.status=='handled' else 'tag-orange' }}">{{ '已处理' if r.status=='handled' else '待处理' }}</span></td>
-      <td>{% if r.status=='open' %}
-        <form method="post" action="{{ url_for('alert_handle', aid=r.id) }}" style="display:flex;gap:6px">
-          <input type="text" name="note" placeholder="处理备注" style="width:120px;padding:6px">
-          <button class="btn btn-sm btn-mint">办结</button>
-        </form>{% else %}{{ r.note }}{% endif %}</td>
-    </tr>
-    {% endfor %}
-  </table>
+<div class="hero-banner" style="background:linear-gradient(120deg,#c92a2a,#e8590c)">
+  <h1>🚨 学生预警中心</h1>
+  <p>同一学生的多来源预警（AI倾诉 / 量表 / 树洞）已合并为一份综合评价 · 点击卡片查看证据与判定依据（科学文献/法规）</p>
 </div>
+
+<!-- 搜索筛选 -->
+<div class="card" style="padding:16px 20px">
+  <form method="get" class="alert-filter">
+    <input type="text" name="q" value="{{ q }}" placeholder="🔍 按学生姓名搜索…">
+    <select name="src">
+      <option value="">全部来源</option>
+      <option value="chat" {{ 'selected' if src=='chat' }}>AI倾诉</option>
+      <option value="treehole" {{ 'selected' if src=='treehole' }}>树洞</option>
+      <option value="assessment" {{ 'selected' if src=='assessment' }}>心理测评</option>
+    </select>
+    <select name="lv">
+      <option value="">全部级别</option>
+      <option value="high" {{ 'selected' if lv=='high' }}>高危</option>
+      <option value="medium" {{ 'selected' if lv=='medium' }}>关注</option>
+    </select>
+    <select name="st">
+      <option value="">全部状态</option>
+      <option value="open" {{ 'selected' if st=='open' }}>有待处理</option>
+      <option value="handled" {{ 'selected' if st=='handled' }}>已办结</option>
+    </select>
+    <button class="btn btn-sm">筛选</button>
+    <a class="btn btn-sm btn-ghost" href="{{ url_for('alerts') }}">重置</a>
+    <span class="alert-count">共 {{ total }} 名学生有预警记录</span>
+  </form>
+</div>
+
+<div class="al-student-grid">
+  {% for c in cards %}
+  <div class="al-card al-lv-{{ 'high' if c.max_level=='high' else 'mid' }}" data-sid="{{ c.sid }}">
+    <div class="al-card-head">
+      <span class="al-av">{{ c.avatar }}</span>
+      <div class="al-name">
+        <b>{{ c.name }}</b>
+        <span>{{ c.grade or '—' }} {{ c.major or '' }}</span>
+      </div>
+      <span class="tag {{ 'tag-red' if c.max_level=='high' else 'tag-orange' }}">{{ '高危' if c.max_level=='high' else '关注' }}</span>
+    </div>
+    <div class="al-sources">
+      {% for s in c.sources %}<span class="tag tag-blue">{{ s }}</span>{% endfor %}
+      {% if c.open_n > 0 %}<span class="tag tag-red">待处理 {{ c.open_n }}</span>{% else %}<span class="tag tag-green">已办结</span>{% endif %}
+    </div>
+    <p class="al-summary">{{ c.summary }}</p>
+    <div class="al-card-foot">
+      <span>共 {{ c.total }} 条信号 · 最近 {{ c.latest_time }}</span>
+      <span class="al-go">查看综合评价 →</span>
+    </div>
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:40px;color:#adb5bd">暂无预警记录</div>
+  {% endfor %}
+</div>
+
+{% if pages>1 %}
+<div class="pager">
+  {% if page>1 %}<a class="btn btn-sm btn-ghost" href="{{ url_for('alerts', q=q, src=src, lv=lv, st=st, page=page-1) }}">← 上一页</a>{% endif %}
+  <span style="font-size:13px;color:#868e96">第 {{ page }} / {{ pages }} 页</span>
+  {% if page<pages %}<a class="btn btn-sm btn-ghost" href="{{ url_for('alerts', q=q, src=src, lv=lv, st=st, page=page+1) }}">下一页 →</a>{% endif %}
+</div>
+{% endif %}
+
+<!-- 遮罩 + 右侧抽屉 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="alertDrawer">
+  <div class="drawer-head">
+    <h3>学生预警档案 · 综合评价</h3>
+    <span class="drawer-close" id="drawerClose">✕</span>
+  </div>
+  <div class="drawer-body" id="drawerBody">
+    <div class="drawer-loading">加载中…</div>
+  </div>
+</aside>
+
+<script>
+var drawer=document.getElementById('alertDrawer');
+var mask=document.getElementById('drawerMask');
+var body=document.getElementById('drawerBody');
+function openD(){drawer.classList.add('open');mask.classList.add('show');}
+function closeD(){drawer.classList.remove('open');mask.classList.remove('show');}
+document.getElementById('drawerClose').onclick=closeD;
+mask.onclick=closeD;
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'—':s;return d.innerHTML;}
+function sec(title,icon,html){return '<div class="dz-sec"><h4>'+icon+' '+title+'</h4>'+html+'</div>';}
+
+document.querySelectorAll('.al-card').forEach(function(card){
+  card.addEventListener('click',function(){
+    var sid=card.dataset.sid;
+    body.innerHTML='<div class="drawer-loading">加载中…</div>';
+    openD();
+    fetch('/api/student_alert/'+sid).then(function(r){return r.json();}).then(function(d){
+      if(!d.ok){body.innerHTML='<div class="drawer-loading">预警档案加载失败</div>';return;}
+      var s=d.student, a=d.alert;
+      var av = s.avatar.indexOf('/')===0 ? '<img class="dz-av-img" src="'+esc(s.avatar)+'">' : '<span class="dz-av-txt">'+esc(s.avatar)+'</span>';
+      var html='<div class="dz-profile"><div class="dz-av">'+av+'</div>'+
+        '<div><h3>'+esc(s.name)+'</h3><p>'+esc(s.grade)+' · '+esc(s.major)+' · '+esc(s.class_name)+'</p></div></div>';
+      // 预警概要
+      html+=sec('预警概要（'+a.total+'条信号 · 合并为1份档案）','🚨',
+        '<table class="dz-tbl"><tr><td>最高级别</td><td><span class="dz-st dz-st-red">'+esc(a.level)+'</span></td>'+
+        '<td>待处理</td><td><span class="dz-st">'+a.open_n+' 条</span></td></tr>'+
+        '<tr><td>涉及渠道</td><td colspan="3">'+a.sources.map(esc).join('、')+'</td></tr>'+
+        '<tr><td>最近触发</td><td colspan="3">'+esc(a.latest_time)+'</td></tr></table>');
+      // 综合评价
+      html+=sec('综合评价（以学生为单位）','🧭','<div class="dz-conclusion">'+esc(d.conclusion)+'</div>');
+      // 学生基本信息
+      html+=sec('学生基本信息','👤',
+        '<table class="dz-tbl">'+
+        '<tr><td>性别</td><td>'+esc(s.gender)+'</td><td>手机号</td><td>'+esc(s.phone)+'</td></tr>'+
+        '<tr><td>学号</td><td colspan="3">'+esc(s.student_id)+'</td></tr>'+
+        '<tr><td>院系</td><td>'+esc(s.college)+'</td><td>班级</td><td>'+esc(s.class_name)+'</td></tr>'+
+        '<tr><td>学籍状态</td><td colspan="3">'+esc(s.student_status)+'</td></tr></table>');
+      // 触发证据
+      var evh='';
+      (d.evidence||[]).forEach(function(e){
+        evh+='<div class="dz-ev"><div class="dz-ev-head"><b>'+esc(e.type)+'</b><small>'+esc(e.time)+'</small></div>'+
+          '<p>'+esc(e.detail)+'</p><span class="dz-ev-extra">'+esc(e.extra)+'</span></div>';
+      });
+      html+=sec('触发证据（'+(d.evidence||[]).length+'条）','📌', evh||'<div class="dz-empty">暂无详细证据</div>');
+      // 判定依据
+      var bh='';
+      (d.basis||[]).forEach(function(b){
+        bh+='<div class="dz-basis"><b>'+esc(b.title)+'</b><p>'+esc(b.text)+'</p></div>';
+      });
+      html+=sec('预警级别 · 判定依据（科学文献/法规）','⚖️', bh);
+      // 处置建议
+      var th='<ol class="dz-tips">';
+      (d.tips||[]).forEach(function(t){th+='<li>'+esc(t)+'</li>';});
+      th+='</ol>';
+      html+=sec('建议处置流程（高校心理危机干预通行做法）','🧭', th);
+      // 办结操作
+      html+='<form method="post" action="/alerts/student/'+sid+'/handle" style="margin-top:6px">'+
+        '<div class="dz-handle"><input type="text" name="note" placeholder="处理备注（如：已面谈，情绪平稳）">'+
+        '<button class="btn btn-mint">办结全部待处理预警</button></div></form>';
+      body.innerHTML=html;
+    }).catch(function(){body.innerHTML='<div class="drawer-loading">预警档案加载失败</div>';});
+  });
+});
+</script>
+
+<style>
+.alert-filter{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.alert-filter input[type=text]{flex:1;min-width:180px;padding:9px 14px;border:1px solid #e0e6ed;border-radius:10px;font-size:14px}
+.alert-filter select{padding:9px 12px;border:1px solid #e0e6ed;border-radius:10px;font-size:14px;background:#fff}
+.alert-count{font-size:13px;color:#868e96;margin-left:auto}
+.al-student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:16px}
+.al-card{background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 4px 14px rgba(201,42,42,.06);border:1px solid #ffe3e3;cursor:pointer;transition:.15s;border-left:4px solid #f59f00}
+.al-card.al-lv-high{border-left-color:#fa5252}
+.al-card:hover{box-shadow:0 8px 22px rgba(201,42,42,.12);transform:translateY(-2px)}
+.al-card-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.al-av{font-size:30px;width:46px;height:46px;border-radius:50%;background:#fff0ec;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.al-name{flex:1;min-width:0}
+.al-name b{font-size:15.5px;color:#343a40;display:block}
+.al-name span{font-size:12px;color:#868e96}
+.al-sources{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.al-summary{font-size:12.5px;color:#495057;line-height:1.8;margin:0 0 10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.al-card-foot{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#adb5bd;border-top:1px solid #fff1ec;padding-top:9px}
+.al-go{color:#e8590c;font-weight:700;font-size:12.5px}
+.pager{display:flex;gap:12px;align-items:center;justify-content:center;padding:16px 0}
+/* 抽屉 */
+.drawer-mask{position:fixed;inset:0;background:rgba(20,40,70,.4);opacity:0;visibility:hidden;transition:.25s;z-index:90}
+.drawer-mask.show{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;right:0;height:100vh;width:min(560px,94vw);background:#f5f8fc;box-shadow:-8px 0 30px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .28s ease;z-index:100;display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;background:linear-gradient(120deg,#c92a2a,#e8590c);color:#fff;flex-shrink:0}
+.drawer-head h3{font-size:16.5px;font-weight:800}
+.drawer-close{cursor:pointer;font-size:18px;opacity:.9;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+.drawer-close:hover{background:rgba(255,255,255,.2)}
+.drawer-body{padding:18px 20px;overflow-y:auto;flex:1}
+.drawer-loading{text-align:center;color:#adb5bd;padding:60px 0}
+.dz-profile{display:flex;align-items:center;gap:14px;background:#fff;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 3px 10px rgba(28,109,217,.06)}
+.dz-av{width:60px;height:60px;border-radius:50%;background:#e7f1ff;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;overflow:hidden}
+.dz-av-img{width:100%;height:100%;object-fit:cover}
+.dz-av-txt{line-height:1}
+.dz-profile h3{font-size:19px;color:#1c3d6e;margin-bottom:4px}
+.dz-profile p{font-size:13px;color:#868e96}
+.dz-sec{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(28,109,217,.05)}
+.dz-sec h4{font-size:14.5px;color:#1c3d6e;margin-bottom:10px;font-weight:800}
+.dz-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.dz-tbl td{padding:7px 6px;border-bottom:1px solid #f1f4f8;color:#343a40;vertical-align:top}
+.dz-tbl td:nth-child(odd){color:#868e96;width:18%;white-space:nowrap}
+.dz-st{background:#e7f5ff;color:#1971c2;border-radius:8px;padding:2px 8px;font-size:11.5px;white-space:nowrap}
+.dz-st-red{background:#ffe3e3;color:#c92a2a}
+.dz-conclusion{background:linear-gradient(120deg,#fff0ec,#ffe8e6);border:1px solid #ffc9c9;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#8a3b2d;line-height:1.9}
+.dz-empty{color:#adb5bd;text-align:center;padding:14px;font-size:13px}
+.dz-ev{background:#fff9f9;border:1px solid #ffe3e3;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.dz-ev-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.dz-ev-head b{font-size:13px;color:#c92a2a}
+.dz-ev-head small{font-size:11.5px;color:#adb5bd}
+.dz-ev p{font-size:13px;color:#343a40;line-height:1.7;margin:4px 0}
+.dz-ev-extra{display:inline-block;background:#fff3bf;color:#e67700;border-radius:8px;padding:2px 9px;font-size:11.5px}
+.dz-basis{background:#f4f7ff;border-left:3px solid #1c6dd9;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.dz-basis b{font-size:13px;color:#1c3d6e;display:block;margin-bottom:4px}
+.dz-basis p{font-size:12.5px;color:#495057;line-height:1.8}
+.dz-tips{padding-left:20px;font-size:13px;color:#495057;line-height:1.9}
+.dz-tips li{margin-bottom:5px}
+.dz-handle{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dz-handle input{flex:1;min-width:160px;padding:9px 12px;border:1px solid #e0e6ed;border-radius:10px;font-size:13px}
+</style>
 {% endblock %}

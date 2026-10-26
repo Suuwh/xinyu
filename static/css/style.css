@@ -22,6 +22,9 @@ a { color: var(--brand); text-decoration: none; }
 .nav-links a:hover { background: var(--soft); color: var(--brand); }
 .nav-links a.hl { background: var(--brand); color: #fff; }
 .nav-user { font-size: 13px; color: var(--ink2); padding: 0 8px; }
+.nav-avatar-wrap { display: inline-flex; vertical-align: middle; margin-right: 4px; }
+.nav-avatar-wrap .nav-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.nav-avatar-wrap .nav-avatar { display: inline-block; line-height: 26px; text-align: center; font-size: 18px; }
 .logout { color: #adb5bd !important; }
 
 .container { max-width: 1180px; margin: 24px auto; padding: 0 20px; }

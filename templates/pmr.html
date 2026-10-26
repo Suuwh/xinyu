@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}渐进式肌肉放松 · 减压舱{% endblock %}
+{% block body %}
+<div class="card" style="max-width:720px;margin:0 auto;text-align:center">
+  <h2>💪 渐进式肌肉放松 PMR</h2>
+  <p style="color:#868e96;font-size:14px">每个部位先用力紧绷5秒，再彻底松开10秒，体会"紧绷"与"放松"的差别。</p>
+  <div id="stage" style="margin:24px auto;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,#69db7c,#37b24d);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;transition:transform .5s">准备</div>
+  <div id="part" style="font-size:22px;font-weight:700;color:#2b8a3e;margin-bottom:6px">点击开始</div>
+  <div id="timer" style="font-size:15px;color:#868e96"></div>
+  <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
+    <button class="btn" id="go">开始练习</button>
+    <a class="btn btn-ghost" href="{{ url_for('relax') }}">返回减压舱</a>
+  </div>
+</div>
+<script>
+var parts=['双手和前臂','肩膀和颈部','额头和面部','胸腹部','大腿','小腿和双脚'];
+var pi=0, phase=0, left=0, t=null;
+var stage=document.getElementById('stage'), part=document.getElementById('part'), timer=document.getElementById('timer');
+function tense(){
+  part.textContent='紧绷：'+parts[pi]; stage.textContent='用力绷紧';
+  stage.style.transform='scale(1.12)'; stage.style.background='radial-gradient(circle,#ffa94d,#e8590c)';
+  left=5; countdown(function(){release();});
+}
+function release(){
+  part.textContent='放松：'+parts[pi]; stage.textContent='慢慢松开';
+  stage.style.transform='scale(1)'; stage.style.background='radial-gradient(circle,#69db7c,#37b24d)';
+  left=10; countdown(function(){ pi++; if(pi<parts.length){tense();}else{finish();} });
+}
+function countdown(cb){
+  timer.textContent=left+' 秒';
+  clearInterval(t); t=setInterval(function(){ left--; if(left<=0){clearInterval(t);cb();} else timer.textContent=left+' 秒'; },1000);
+}
+function finish(){ part.textContent='全部完成 🌿'; stage.textContent='放松'; timer.textContent='感受此刻身体的轻松'; }
+document.getElementById('go').onclick=function(){ pi=0; tense(); this.style.display='none'; };
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}作答中 · {{ scale.name }}{% endblock %}
+{% block body %}
+<div class="take-wrap">
+  <div class="take-top">
+    <div class="take-progress">
+      <div class="take-bar" id="bar"></div>
+    </div>
+    <div class="take-count"><span id="cur">1</span> / {{ scale.questions|length }}</div>
+  </div>
+  <div class="take-card">
+    <form method="post" id="qform">
+      {% for q in scale.questions %}
+      {% set qidx = loop.index0 %}
+      <div class="qpage" data-i="{{ qidx }}">
+        <div class="q-text">{{ loop.index }}. {{ q }}</div>
+        <div class="q-opts">
+          {% for label, val in scale.options %}
+          <label class="qopt">
+            <input type="radio" name="q{{ qidx }}" value="{{ val }}" required>
+            <span>{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+      <div class="take-nav">
+        <button type="button" class="btn btn-ghost" id="prevBtn">上一题</button>
+        <button type="button" class="btn" id="nextBtn">下一题</button>
+        <button type="submit" class="btn btn-mint" id="subBtn" style="display:none">提交结果</button>
+      </div>
+    </form>
+  </div>
+</div>
+<style>
+.take-wrap{max-width:760px;margin:0 auto}
+.take-top{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.take-progress{flex:1;height:10px;background:#ffe3d3;border-radius:6px;overflow:hidden}
+.take-bar{height:100%;width:0;background:linear-gradient(90deg,#ff6b6b,#ffd43b);transition:.3s;border-radius:6px}
+.take-count{font-weight:700;color:var(--brand);white-space:nowrap}
+.take-card{background:#fff;border-radius:22px;padding:36px 34px;box-shadow:0 8px 24px rgba(255,107,107,.1)}
+.qpage{display:none}
+.qpage.active{display:block}
+.q-text{font-size:20px;font-weight:700;line-height:1.6;margin-bottom:22px;min-height:64px}
+.q-opts{display:flex;flex-direction:column;gap:12px}
+.qopt{display:flex;align-items:center;gap:10px;border:2px solid #ffe3d3;border-radius:14px;padding:14px 18px;cursor:pointer;transition:.15s;background:#fffdf9}
+.qopt:hover{border-color:var(--brand);background:#fff5f0}
+.qopt input{accent-color:var(--brand);width:18px;height:18px}
+.qopt span{font-size:15px;color:#495057}
+.qopt:has(input:checked){border-color:var(--brand);background:#fff0eb}
+.take-nav{display:flex;justify-content:space-between;margin-top:28px}
+</style>
+<script>
+var pages = document.querySelectorAll('.qpage');
+var total = pages.length;
+var idx = 0;
+function show(i){
+  pages.forEach(function(p){ p.classList.remove('active'); });
+  pages[i].classList.add('active');
+  document.getElementById('cur').textContent = (i+1);
+  document.getElementById('bar').style.width = ((i+1)/total*100)+'%';
+  document.getElementById('prevBtn').style.visibility = i===0 ? 'hidden' : 'visible';
+  document.getElementById('nextBtn').style.display = i===total-1 ? 'none' : 'inline-block';
+  document.getElementById('subBtn').style.display = i===total-1 ? 'inline-block' : 'none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function answered(i){
+  var c = pages[i].querySelector('input[name="q'+i+'"]:checked');
+  return !!c;
+}
+document.getElementById('nextBtn').onclick=function(){
+  if(!answered(idx)){ alert('请先选择一个选项'); return; }
+  idx++; show(idx);
+};
+document.getElementById('prevBtn').onclick=function(){ if(idx>0){ idx--; show(idx); } };
+document.getElementById('qform').onsubmit=function(){
+  if(!answered(idx)){ alert('请选择最后一题的选项'); return false; }
+  return true;
+};
+show(0);
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}减压舱 · 心屿{% endblock %}
+{% block body %}
+<div class="hero-banner">
+  <h1>🧘 减压舱 · 4个科学放松工具</h1>
+  <p>压力上头时，身体比大脑更需要被安抚。选一个当下适合你的方法，跟着做几分钟。</p>
+</div>
+<div class="feature-grid">
+  <a class="feature" href="{{ url_for('breath') }}">
+    <div class="ic">🫁</div><h4>4-7-8 呼吸</h4>
+    <p>吸气4秒·屏息7秒·呼气8秒，快速平复心慌、入睡困难</p>
+    <span class="tag tag-blue" style="margin-top:8px">约2分钟</span>
+  </a>
+  <a class="feature" href="{{ url_for('relax_method', method='grounding') }}">
+    <div class="ic">🖐️</div><h4>5-4-3-2-1 着陆</h4>
+    <p>调动五感回到当下，把自己从焦虑、恐慌漩涡里拉出来</p>
+    <span class="tag tag-orange" style="margin-top:8px">约3分钟</span>
+  </a>
+  <a class="feature" href="{{ url_for('relax_method', method='pmr') }}">
+    <div class="ic">💪</div><h4>渐进式肌肉放松</h4>
+    <p>逐组紧绷再松开肌肉，缓解肩颈紧绷、躯体紧张</p>
+    <span class="tag tag-green" style="margin-top:8px">约8分钟</span>
+  </a>
+  <a class="feature" href="{{ url_for('relax_method', method='mindful') }}">
+    <div class="ic">🌿</div><h4>正念身体扫描</h4>
+    <p>从头到脚觉察身体，不评判地接纳，适合反复内耗、慢性压力</p>
+    <span class="tag" style="margin-top:8px">约6分钟</span>
+  </a>
+</div>
+<div class="card" style="margin-top:18px">
+  <h3>🧭 怎么选？</h3>
+  <table class="tbl">
+    <tr><th>当下状态</th><th>推荐方法</th></tr>
+    <tr><td>心慌、紧张、睡不着</td><td>4-7-8 呼吸</td></tr>
+    <tr><td>突然恐慌、脑子停不下来</td><td>5-4-3-2-1 着陆</td></tr>
+    <tr><td>肩颈僵硬、身体紧绷</td><td>渐进式肌肉放松</td></tr>
+    <tr><td>反复想烦心事、慢性压力</td><td>正念身体扫描</td></tr>
+  </table>
+  <p style="font-size:12px;color:#adb5bd;margin-top:10px">方法参考：清华大学学生健康发展研究中心《情绪急救包》、高校心理健康教育中心放松训练指引。</p>
+</div>
+{% endblock %}

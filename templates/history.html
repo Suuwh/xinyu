@@ -1,7 +1,17 @@
 {% extends "base.html" %}
 {% block title %}测评历史 · 心屿{% endblock %}
 {% block body %}
-<h2 style="color:#0e4d6e;margin-bottom:14px">我的测评历史</h2>
+<h2 style="color:#0e4d6e;margin-bottom:14px">📚 我的测评历史</h2>
+
+<div class="card" style="padding:12px 16px">
+  <form method="get" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input type="text" name="q" value="{{ q }}" placeholder="🔍 按量表名称搜索…" style="flex:1;min-width:200px;padding:9px 14px;border:1px solid #e0e6ed;border-radius:10px;font-size:14px">
+    <button class="btn btn-sm">搜索</button>
+    <a class="btn btn-sm btn-ghost" href="{{ url_for('history') }}">重置</a>
+    <span style="font-size:13px;color:#868e96;margin-left:auto">共 {{ total }} 条记录</span>
+  </form>
+</div>
+
 <div class="card">
 {% if rows %}
 <table class="tbl">
@@ -9,11 +19,13 @@
   {% for r in rows %}
   <tr>
     <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-    <td>{{ r.scale_code|upper }}</td>
+    <td>{{ names.get(r.scale_code, r.scale_code) }}<br><span style="font-size:11px;color:#adb5bd">{{ r.scale_code|upper }}</span></td>
     <td><b>{{ r.score }}</b></td>
     <td>
-      {% if '重度' in r.level or '中重度' in r.level %}<span class="tag tag-red">{{ r.level }}</span>
-      {% elif '中度' in r.level %}<span class="tag tag-orange">{{ r.level }}</span>
+      {% set rk=risks.get(r.id) %}
+      {% if rk is none %}<span class="tag tag-blue">{{ r.level }}</span>
+      {% elif rk>=60 %}<span class="tag tag-red">{{ r.level }}</span>
+      {% elif rk>=35 %}<span class="tag tag-orange">{{ r.level }}</span>
       {% else %}<span class="tag tag-green">{{ r.level }}</span>{% endif %}
     </td>
     <td style="font-size:13px;color:#46586a">{{ r.advice }}</td>
@@ -24,4 +36,12 @@
   <p style="color:#8a99a8">还没有测评记录。<a href="{{ url_for('assessments') }}">去做第一次测评 →</a></p>
 {% endif %}
 </div>
+
+{% if pages>1 %}
+<div style="display:flex;gap:12px;justify-content:center;padding:14px 0">
+  {% if page>1 %}<a class="btn btn-sm btn-ghost" href="{{ url_for('history', q=q, page=page-1) }}">← 上一页</a>{% endif %}
+  <span style="font-size:13px;color:#868e96">第 {{ page }} / {{ pages }} 页</span>
+  {% if page<pages %}<a class="btn btn-sm btn-ghost" href="{{ url_for('history', q=q, page=page+1) }}">下一页 →</a>{% endif %}
+</div>
+{% endif %}
 {% endblock %}

@@ -1,33 +1,232 @@
 {% extends "base.html" %}
 {% block title %}预约管理 · 心屿{% endblock %}
 {% block body %}
-<div class="card">
-  <h2>📅 我的咨询预约</h2>
-  {% for r in rows %}
-  {% set st = users.get(r.student_id) %}
-  <div style="border:2px solid #fff1e6;border-radius:14px;padding:16px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div>
-        <b>{{ st.real_name or st.username }}</b>
-        <span class="tag tag-blue">{{ st.grade or '' }} · {{ st.major or '' }}</span>
-        <span class="tag {{ 'tag-orange' if r.status=='pending' else 'tag-green' }}">
-          {{ {'pending':'待确认','confirmed':'已确认','done':'已完成','cancelled':'已取消'}.get(r.status,r.status) }}
-        </span>
-      </div>
-      <div style="color:#868e96;font-size:13px">{{ r.created_at.strftime('%Y-%m-%d %H:%M') }} 提交</div>
-    </div>
-    <p style="margin-top:8px;font-size:14px">
-      🕐 {{ r.date }} {{ r.time_slot }}<br>
-      💭 学生自述主题：<b>{{ r.topic or '未填写' }}</b>
-    </p>
-    {% if r.status in ['pending','confirmed'] %}
-    <div style="margin-top:10px;display:flex;gap:8px">
-      <a class="btn btn-sm btn-sky" href="{{ url_for('manage_booking_action', aid=r.id, action='confirmed') }}">确认</a>
-      <a class="btn btn-sm btn-mint" href="{{ url_for('manage_booking_action', aid=r.id, action='done') }}">已完成</a>
-      <a class="btn btn-sm btn-ghost" href="{{ url_for('manage_booking_action', aid=r.id, action='cancelled') }}">取消</a>
-    </div>
-    {% endif %}
+<div class="mb-page">
+  <div class="page-head">
+    <h2>📅 预约管理</h2>
+    <p>点击任意预约，可在右侧查看该学生的完整心理档案</p>
   </div>
-  {% else %}<p style="color:#adb5bd">暂无学生预约。</p>{% endfor %}
+
+  <!-- 暂停预约开关 -->
+  <div class="card mb-pause">
+    <div style="flex:1">
+      <h3 style="margin:0;font-size:15.5px">🛑 暂停预约</h3>
+      <p style="font-size:13px;color:#868e96;margin-top:5px">
+        {{ '暂停中：学生端将不再显示你的信息，也无法向你提交预约。' if is_pausing else '开启后，学生端将立即停止显示你的信息与预约入口。' }}
+      </p>
+    </div>
+    <form method="post" action="{{ url_for('manage_booking_pause') }}">
+      <button class="btn {{ 'btn-danger' if not is_pausing else 'btn-mint' }}" type="submit">
+        {{ '恢复预约' if is_pausing else '暂停预约' }}
+      </button>
+    </form>
+  </div>
+
+  <div class="card mb-list">
+    {% for r in rows %}
+    {% set st = users.get(r.student_id) %}
+    <div class="mb-row" data-sid="{{ r.student_id }}">
+      <div class="mb-row-main">
+        <div class="mb-row-top">
+          {% if st.avatar and st.avatar.startswith('/') %}
+          <img class="mb-av-img" src="{{ st.avatar }}">
+          {% else %}
+          <span class="mb-av">{{ st.avatar or '🌻' }}</span>
+          {% endif %}
+          <b class="mb-name">{{ st.real_name or st.username }}</b>
+          <span class="tag tag-blue">{{ st.grade or '' }} {{ st.major or '' }}</span>
+          <span class="tag {{ 'tag-orange' if r.status=='pending' else ('tag-green' if r.status in ['confirmed','done'] else '') }}">
+            {{ {'pending':'待确认','confirmed':'已确认','done':'已完成','cancelled':'已取消'}.get(r.status,r.status) }}
+          </span>
+        </div>
+        <div class="mb-row-info">
+          <span>🕐 {{ r.date }} {{ r.time_slot }}</span>
+          <span>💭 {{ r.topic or '未填写主题' }}</span>
+          <span class="mb-go">查看档案 →</span>
+        </div>
+      </div>
+      {% if r.status in ['pending','confirmed'] %}
+      <div class="mb-row-actions" onclick="event.stopPropagation()">
+        <a class="btn btn-sm btn-sky" href="{{ url_for('manage_booking_action', aid=r.id, action='confirmed') }}">确认</a>
+        <a class="btn btn-sm btn-mint" href="{{ url_for('manage_booking_action', aid=r.id, action='done') }}">完成</a>
+        <button type="button" class="btn btn-sm btn-ghost mb-cancel" data-aid="{{ r.id }}"
+                data-stu="{{ st.real_name or st.username }}" data-time="{{ r.date }} {{ r.time_slot }}">取消</button>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}<p style="color:#adb5bd;padding:20px">暂无学生预约。</p>{% endfor %}
+  </div>
 </div>
+
+<!-- 遮罩 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<!-- 右侧抽屉 -->
+<aside class="drawer" id="profileDrawer">
+  <div class="drawer-head">
+    <h3>学生心理档案</h3>
+    <span class="drawer-close" id="drawerClose">✕</span>
+  </div>
+  <div class="drawer-body" id="drawerBody">
+    <div class="drawer-loading">加载中…</div>
+  </div>
+</aside>
+
+<!-- 取消预约确认弹窗 -->
+<div class="confirm-mask" id="cfmMask"></div>
+<div class="confirm-box" id="cfmBox" role="dialog" aria-modal="true">
+  <div class="cfm-icon">⚠️</div>
+  <h3>确认取消这条预约？</h3>
+  <p id="cfmDesc">取消后该预约将被标记为「已取消」，学生端会同步看到取消状态。此操作不可直接撤销，请谨慎确认。</p>
+  <div class="cfm-actions">
+    <button type="button" class="btn btn-ghost" id="cfmNo">再想想</button>
+    <form method="post" id="cfmForm" action="">
+      <button type="submit" class="btn btn-danger">确认取消预约</button>
+    </form>
+  </div>
+</div>
+
+<script>
+const drawer=document.getElementById('profileDrawer');
+const mask=document.getElementById('drawerMask');
+const body=document.getElementById('drawerBody');
+function openDrawer(){drawer.classList.add('open');mask.classList.add('show');}
+function closeDrawer(){drawer.classList.remove('open');mask.classList.remove('show');}
+document.getElementById('drawerClose').onclick=closeDrawer;
+mask.onclick=closeDrawer;
+
+/* 取消预约确认弹窗 */
+const cfmMask=document.getElementById('cfmMask');
+const cfmBox=document.getElementById('cfmBox');
+const cfmDesc=document.getElementById('cfmDesc');
+const cfmForm=document.getElementById('cfmForm');
+function openCfm(){cfmMask.style.display='block';cfmBox.style.display='block';}
+function closeCfm(){cfmMask.style.display='none';cfmBox.style.display='none';}
+document.getElementById('cfmNo').onclick=closeCfm;
+cfmMask.onclick=closeCfm;
+document.querySelectorAll('.mb-cancel').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    cfmForm.action='/manage_booking/'+btn.dataset.aid+'/cancelled';
+    cfmDesc.textContent='取消「'+btn.dataset.stu+'」的预约（'+btn.dataset.time+'）后，该预约将标记为已取消，学生端会同步看到。此操作不可直接撤销，请确认。';
+    openCfm();
+  });
+});
+
+function esc(s){const d=document.createElement('div');d.textContent=s==null?'—':s;return d.innerHTML;}
+function section(title,icon,html){
+  return '<div class="dz-sec"><h4>'+icon+' '+title+'</h4>'+html+'</div>';
+}
+document.querySelectorAll('.mb-row').forEach(row=>{
+  row.addEventListener('click',()=>{
+    const sid=row.dataset.sid;    body.innerHTML='<div class="drawer-loading">加载中…</div>';
+    openDrawer();
+    fetch('/api/student_profile/'+sid).then(r=>r.json()).then(d=>{
+      if(!d.ok){body.innerHTML='<div class="drawer-loading">档案加载失败</div>';return;}
+      const s=d.student;
+      const av = s.avatar.indexOf('/')===0 ? '<img class="dz-av-img" src="'+esc(s.avatar)+'">' : '<span>'+esc(s.avatar)+'</span>';
+      let html='<div class="dz-profile">'+
+        '<div class="dz-av">'+av+'</div>'+
+        '<div><h3>'+esc(s.name)+'</h3><p>'+esc(s.education_level)+' · '+esc(s.college)+'</p></div>'+
+        '</div>';
+      // 基本信息
+      html+=section('基本信息','👤',
+        '<table class="dz-tbl">'+
+        '<tr><td>性别</td><td>'+esc(s.gender)+'</td><td>手机号</td><td>'+esc(s.phone)+'</td></tr>'+
+        '<tr><td>学号</td><td colspan="3">'+esc(s.student_id)+'</td></tr>'+
+        '<tr><td>院校</td><td colspan="3">'+esc(s.school)+'</td></tr>'+
+        '<tr><td>专业</td><td>'+esc(s.major)+'</td><td>班级</td><td>'+esc(s.class_name)+'</td></tr>'+
+        '<tr><td>年级</td><td>'+esc(s.grade)+'</td><td>学籍状态</td><td>'+esc(s.student_status)+'</td></tr>'+
+        '</table>');
+      // 本次/历史预约
+      let appth='';
+      d.appointments.forEach(a=>{
+        appth+='<tr><td>'+esc(a.date)+'<br><small>'+esc(a.time)+'</small></td><td>'+esc(a.counselor)+'</td><td>'+esc(a.topic)+'</td><td><span class="dz-st">'+esc(a.status)+'</span></td></tr>';
+      });
+      html+=section('心理咨询预约记录（'+d.appointments.length+'）','📅',
+        '<table class="dz-tbl dz-list"><tr><th>时间</th><th>咨询师</th><th>主题</th><th>状态</th></tr>'+(appth||'<tr><td colspan="4" class="dz-empty">暂无预约记录</td></tr>')+'</table>');
+      // 测评
+      let ash='';
+      d.assessments.forEach(a=>{
+        ash+='<tr><td>'+esc(a.name)+'</td><td>'+esc(a.score)+'</td><td>'+esc(a.level)+'</td><td>'+esc(a.time)+'</td></tr>';
+      });
+      html+=section('心理测评记录（'+d.assessments.length+'）','📊',
+        '<table class="dz-tbl dz-list"><tr><th>量表</th><th>得分</th><th>结果</th><th>时间</th></tr>'+(ash||'<tr><td colspan="4" class="dz-empty">暂无测评记录</td></tr>')+'</table>');
+      // 预警/问诊
+      let alh='';
+      d.alerts.forEach(a=>{
+        alh+='<div class="dz-alert '+(a.level==='高'?'hi':'')+'"><div><b>['+esc(a.source)+'] '+esc(a.level)+'风险 · '+esc(a.status)+'</b><p>'+esc(a.content)+'</p>'+(a.note?'<small>处理备注：'+esc(a.note)+'</small>':'')+'</div><span class="dz-alert-time">'+esc(a.time)+'</span></div>';
+      });
+      html+=section('预警与跟进记录（'+d.alerts.length+'）','⚠️',
+        alh||'<div class="dz-empty">暂无预警记录</div>');
+      // 树洞
+      let trh='';
+      d.trees.forEach(t=>{
+        trh+='<div class="dz-tree">'+(t.flag?'<span class="dz-flag">危机</span>':'')+'<b>'+esc(t.title)+'</b><small>'+esc(t.time)+'</small></div>';
+      });
+      html+=section('近期树洞动态（'+d.trees.length+'）','🌳',
+        trh||'<div class="dz-empty">暂无树洞动态</div>');
+      body.innerHTML=html;
+    }).catch(()=>{body.innerHTML='<div class="drawer-loading">档案加载失败</div>';});
+  });
+});
+</script>
+
+<style>
+.mb-page{max-width:900px;margin:0 auto}
+.mb-pause{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border:1px solid #d0ebff;background:#f0f8ff}
+.btn-danger{background:#fa5252}
+.btn-danger:hover{background:#e03131}
+.mb-list{padding:10px 14px}
+.mb-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid #eef2f7;margin-bottom:10px;cursor:pointer;transition:.15s}
+.mb-row:hover{border-color:#74c0fc;background:#f7fbff;box-shadow:0 4px 14px rgba(28,109,217,.08)}
+.mb-row-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.mb-av{font-size:26px;width:40px;height:40px;border-radius:50%;background:#e7f1ff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.mb-av-img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.mb-name{font-size:15px;color:#343a40}
+.mb-row-info{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:#666;padding-left:4px}
+.mb-go{color:#1c6dd9;font-weight:600;margin-left:auto}
+.mb-row-actions{display:flex;gap:6px;flex-shrink:0}
+/* 抽屉 */
+.drawer-mask{position:fixed;inset:0;background:rgba(20,40,70,.4);opacity:0;visibility:hidden;transition:.25s;z-index:90}
+.drawer-mask.show{opacity:1;visibility:visible}
+.drawer{position:fixed;top:0;right:0;height:100vh;width:min(520px,92vw);background:#f5f8fc;box-shadow:-8px 0 30px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .28s ease;z-index:100;display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;background:linear-gradient(120deg,#1c6dd9,#15aabf);color:#fff;flex-shrink:0}
+.drawer-head h3{font-size:17px;font-weight:800}
+.drawer-close{cursor:pointer;font-size:18px;opacity:.9;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+.drawer-close:hover{background:rgba(255,255,255,.2)}
+.drawer-body{padding:18px 20px;overflow-y:auto;flex:1}
+.drawer-loading{text-align:center;color:#adb5bd;padding:60px 0}
+.dz-profile{display:flex;align-items:center;gap:14px;background:#fff;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 3px 10px rgba(28,109,217,.06)}
+.dz-av{width:60px;height:60px;border-radius:50%;background:#e7f1ff;display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden}
+.dz-av-img{width:100%;height:100%;object-fit:cover}
+.dz-profile h3{font-size:19px;color:#1c3d6e;margin-bottom:4px}
+.dz-profile p{font-size:13px;color:#868e96}
+.dz-sec{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(28,109,217,.05)}
+.dz-sec h4{font-size:14.5px;color:#1c3d6e;margin-bottom:10px;font-weight:800}
+.dz-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.dz-tbl td{padding:7px 6px;border-bottom:1px solid #f1f4f8;color:#343a40;vertical-align:top}
+.dz-tbl td:nth-child(odd){color:#868e96;width:18%;white-space:nowrap}
+.dz-list th{font-size:12px;color:#868e96;text-align:left;padding:6px;border-bottom:2px solid #eef2f7;font-weight:600}
+.dz-list td{font-size:12.5px}
+.dz-st{background:#e7f5ff;color:#1971c2;border-radius:8px;padding:2px 8px;font-size:11.5px;white-space:nowrap}
+.dz-empty{color:#adb5bd;text-align:center;padding:14px;font-size:13px}
+.dz-alert{display:flex;justify-content:space-between;gap:10px;background:#fff9db;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.dz-alert.hi{background:#fff0f0}
+.dz-alert p{color:#666;font-size:12.5px;margin:4px 0;line-height:1.6}
+.dz-alert small{color:#868e96}
+.dz-alert-time{font-size:11.5px;color:#adb5bd;white-space:nowrap}
+.dz-tree{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f4f8;font-size:13px}
+.dz-tree b{flex:1;color:#343a40;font-weight:600}
+.dz-tree small{color:#adb5bd;font-size:12px}
+.dz-flag{background:#fa5252;color:#fff;border-radius:6px;padding:1px 7px;font-size:11px}
+/* 取消确认弹窗 */
+.confirm-mask{position:fixed;inset:0;background:rgba(20,40,70,.45);display:none;z-index:120}
+.confirm-box{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);width:min(400px,92vw);background:#fff;border-radius:18px;padding:26px 26px 22px;display:none;z-index:130;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.cfm-icon{font-size:34px;margin-bottom:10px}
+.confirm-box h3{font-size:17px;color:#343a40;margin:0 0 10px}
+.confirm-box p{font-size:13.5px;color:#868e96;line-height:1.8;margin:0 0 20px;text-align:left}
+.cfm-actions{display:flex;gap:10px;justify-content:center}
+.cfm-actions form{margin:0}
+.cfm-actions .btn{padding:10px 22px}
+</style>
 {% endblock %}

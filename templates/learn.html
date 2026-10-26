@@ -1,34 +1,111 @@
 {% extends "base.html" %}
 {% block title %}心理成长 · 心屿{% endblock %}
 {% block body %}
-<div class="hero-banner">
-  <h1>🌱 心理成长充电站</h1>
-  <p>专业科普、治愈影音、好书推荐，碎片时间也能慢慢照顾自己。</p>
-</div>
-
-<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
-  <a class="btn {{ '' if tab=='article' else 'btn-ghost' }}" href="{{ url_for('learn', tab='article') }}">📖 心晴手札</a>
-  <a class="btn btn-sky {{ '' if tab=='video' else 'btn-ghost' }}" href="{{ url_for('learn', tab='video') }}">🎬 疗愈影音</a>
-  <a class="btn btn-mint {{ '' if tab=='book' else 'btn-ghost' }}" href="{{ url_for('learn', tab='book') }}">📗 枕边书单</a>
-</div>
-
-<div class="masonry">
-  {% for r in rows %}
-  <div class="mcard">
-    <a href="{{ url_for('learn_post', rid=r.id) }}" style="color:#343a40">
-      {% if r.kind=='video' %}<div style="font-size:38px">🎬</div>
-      {% elif r.kind=='book' %}<div style="font-size:38px">📗</div>
-      {% else %}<div style="font-size:38px">📖</div>{% endif %}
-      <div style="font-weight:700;margin:8px 0 6px">{{ r.title }}</div>
-      <div style="font-size:13px;color:#868e96">{{ r.summary }}</div>
-    </a>
-    <div style="margin-top:10px;font-size:12px;color:#adb5bd">
-      ✍️ {{ r.author }} · {{ r.created_at.strftime('%Y-%m-%d') }}
-      {% if r.source %}<br>来源：{{ r.source }}{% endif %}
-    </div>
+<div class="wrap">
+  <div class="page-head">
+    <h2>🌱 心理成长</h2>
+    <p>专业心理内容，陪你慢慢长大</p>
   </div>
+
+  <div class="sub-tabs">
+    {% for k, name in tabs.items() %}
+    <a class="sub-tab {% if k==tab %}active{% endif %}" href="{{ url_for('learn', tab=k) }}">{{ name }}</a>
+    {% endfor %}
+  </div>
+
+  {% if tab == 'article' %}
+  <div class="src-line">
+    <span class="src-dot {% if online %}on{% endif %}"></span>
+    {% if online %}实时同步中国网心理频道 · 最近更新 {{ news_t }}{% else %}显示精选内容 · 当前无法连接实时源{% endif %}
+  </div>
+  {% endif %}
+
+  {% if tab == 'article' %}
+    <div class="post-grid">
+      {% for it in live %}
+      <a class="pcard live" href="{{ url_for('reader') }}?url={{ it.url|urlencode }}">
+        <span class="live-badge">实时</span>
+        <h4>{{ it.title }}</h4>
+        <p>{{ it.summary or '点击在站内阅读全文' }}</p>
+        <div class="m-meta"><span>{{ it.source }}</span><span>{{ it.date }}</span></div>
+      </a>
+      {% endfor %}
+      {% for r in rows %}
+      <a class="pcard" href="{{ url_for('learn_post', rid=r.id) }}">
+        <h4>{{ r.title }}</h4>
+        <p>{{ r.summary }}</p>
+        <div class="m-meta"><span>{{ r.author }}</span><span>{{ r.created_at.strftime('%Y-%m-%d') }}</span></div>
+      </a>
+      {% endfor %}
+    </div>
+  {% elif tab == 'video' %}
+    <div class="video-grid">
+      {% for r in rows %}
+      <a class="vcard" href="{{ r.url or url_for('learn_post', rid=r.id) }}" target="{{ '_blank' if r.url else '_self' }}">
+        <div class="v-thumb"><span class="v-play"></span><em>视频</em></div>
+        <h4>{{ r.title }}</h4>
+        <p>{{ r.summary }}</p>
+        <div class="v-watch">▶ {{ '前往平台观看' if r.url else '查看内容介绍' }}</div>
+        <div class="m-meta"><span>{{ r.author }}</span><span>{{ r.source }}</span></div>
+      </a>
+      {% endfor %}
+    </div>
   {% else %}
-  <div class="mcard">暂无内容，敬请期待。</div>
-  {% endfor %}
+    <div class="book-grid">
+      {% for r in rows %}
+      <a class="book-card" href="{{ url_for('learn_post', rid=r.id) }}">
+        {% if r.cover %}
+        <div class="book-cover"><img src="{{ url_for('static', filename=r.cover) }}" alt="{{ r.title }} 封面" loading="lazy"></div>
+        {% else %}
+        <div class="book-cover">📖</div>
+        {% endif %}
+        <h4>{{ r.title }}</h4>
+        <p class="book-sum">{{ r.summary }}</p>
+        <div class="m-meta"><span>{{ r.source }}</span></div>
+      </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if show_more %}
+  <div style="text-align:center;margin:22px 0">
+    <a class="btn btn-ghost" href="{{ url_for('learn_all', tab=tab) }}">查看更多（共 {{ total }} 条）→</a>
+  </div>
+  {% endif %}
 </div>
+<style>
+.sub-tabs{display:flex;gap:10px;margin:16px 0 8px;flex-wrap:wrap}
+.sub-tab{padding:8px 20px;border-radius:20px;background:#fff;color:#666;font-size:14px;font-weight:600;border:1px solid #eee}
+.sub-tab.active{background:linear-gradient(120deg,#ff8787,#ff6b6b);color:#fff;border-color:transparent}
+.src-line{font-size:12px;color:#868e96;margin:6px 2px 14px;display:flex;align-items:center;gap:6px}
+.src-dot{width:8px;height:8px;border-radius:50%;background:#ccc}
+.src-dot.on{background:#37b24d}
+.post-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;align-items:start}
+.pcard{background:#fff;border-radius:16px;padding:18px;box-shadow:0 4px 14px rgba(33,99,180,.06);display:block;position:relative;border:1px solid #f1f4f8}
+.pcard h4{font-size:15px;color:#343a40;line-height:1.55;margin-bottom:8px;font-weight:700}
+.pcard p{font-size:13px;color:#868e96;line-height:1.7;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pcard .m-meta{display:flex;justify-content:space-between;font-size:11.5px;color:#adb5bd;border-top:1px solid #f5f7fa;padding-top:9px;gap:8px}
+.live-badge{position:absolute;top:14px;right:14px;background:linear-gradient(120deg,#51cf66,#37b24d);color:#fff;font-size:10.5px;padding:2px 9px;border-radius:10px;font-weight:600}
+.pcard.live{border-color:#d3f9d8}
+.pcard.live h4{padding-right:46px}
+.book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.book-card{background:#fff;border-radius:16px;padding:18px;text-align:center;box-shadow:0 4px 14px rgba(33,99,180,.06)}
+.book-cover{font-size:44px;margin-bottom:10px;height:168px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,#f1f6ff,#e8f1fb);border-radius:10px}
+.book-cover img{width:auto;max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 4px 14px rgba(0,0,0,.16);border-radius:4px}
+.book-card h4{font-size:15px;color:#343a40;margin-bottom:6px}
+.book-card p{font-size:12px;color:#868e96;line-height:1.6;min-height:36px}
+.book-card .book-sum{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;min-height:76px}
+.book-card .m-meta{justify-content:center}
+.book-card .m-meta span{color:#1971c2;font-size:11.5px}
+.video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.vcard{background:#fff;border-radius:16px;padding:14px;box-shadow:0 4px 14px rgba(33,99,180,.06);display:block;border:1px solid #f1f4f8;transition:.15s}
+.vcard:hover{box-shadow:0 8px 22px rgba(33,99,180,.12);transform:translateY(-2px)}
+.v-thumb{height:128px;border-radius:12px;background:linear-gradient(135deg,#74c0fc,#4dabf7);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;margin-bottom:12px;position:relative}
+.v-play{width:0;height:0;border-style:solid;border-width:13px 0 13px 22px;border-color:transparent transparent transparent rgba(255,255,255,.95);margin-left:6px}
+.v-thumb em{font-style:normal;font-size:12px;margin-top:8px;opacity:.92;letter-spacing:2px}
+.vcard h4{font-size:15px;color:#343a40;margin-bottom:5px;line-height:1.5}
+.vcard p{font-size:12.5px;color:#868e96;line-height:1.6;min-height:38px}
+.v-watch{display:inline-block;background:linear-gradient(120deg,#ff6b6b,#ff922b);color:#fff;font-size:12px;font-weight:700;padding:5px 14px;border-radius:14px;margin:4px 0 8px}
+.vcard .m-meta{display:flex;justify-content:space-between;font-size:11.5px;color:#adb5bd;border-top:1px solid #f5f7fa;padding-top:8px}
+</style>
 {% endblock %}

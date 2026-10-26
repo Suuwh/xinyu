@@ -2,32 +2,73 @@
 {% block title %}首页 · 心屿{% endblock %}
 {% block body %}
 <div class="hero-banner">
-  <h1>你好，{{ u.real_name or u.username }} 🌻</h1>
-  <p>今天的心情，想和谁聊聊？心屿一直在这里，安静地陪着你。</p>
+  <h1>你好，{{ u.real_name or u.username }} {{ u.avatar or '🌻' }}</h1>
+  <p>今天也辛苦啦。这里是你的情绪小角落，需要时随时来坐坐。</p>
 </div>
 
 {% if open_alerts %}
-<div class="card" style="border:2px solid #ffd43b">
-  🔔 你有 <b>{{ open_alerts }}</b> 条情绪预警，请关注，必要时预约咨询师聊聊。
+<div class="card" style="border:2px solid #ffd43b;display:flex;align-items:center;gap:10px">
+  <span style="font-size:22px">🔔</span>
+  <div>你有 <b>{{ open_alerts }}</b> 条情绪状态需要关注。<a href="{{ url_for('booking') }}">点此预约咨询师聊聊 →</a></div>
 </div>
 {% endif %}
 
-<div class="feature-grid">
-  <a class="feature" href="{{ url_for('chat') }}"><div class="ic">💬</div><h4>AI 倾听陪伴</h4><p>随时诉说，不评判、不泄露</p></a>
-  <a class="feature" href="{{ url_for('assessments') }}"><div class="ic">📋</div><h4>专业心理测评</h4><p>9套国际量表，科学自评</p></a>
-  <a class="feature" href="{{ url_for('treehole') }}"><div class="ic">🌳</div><h4>匿名树洞</h4><p>把心事说给陌生人听</p></a>
-  <a class="feature" href="{{ url_for('mood') }}"><div class="ic">📈</div><h4>我的情绪曲线</h4><p>记录心情，看见自己的变化</p></a>
-  <a class="feature" href="{{ url_for('booking') }}"><div class="ic">📅</div><h4>预约咨询</h4><p>一对一，免费保密</p></a>
-  <a class="feature" href="{{ url_for('learn') }}"><div class="ic">📚</div><h4>心理成长</h4><p>科普、视频、好书推荐</p></a>
+<div class="home-stats">
+  <a class="hstat" href="{{ url_for('history') }}">
+    <div class="hstat-n">{{ assess_cnt }}</div><div class="hstat-l">已完成测评</div>
+  </a>
+  <a class="hstat" href="{{ url_for('mood') }}">
+    <div class="hstat-n">{{ mood_cnt }}</div><div class="hstat-l">情绪日记天数</div>
+  </a>
+  <a class="hstat" href="{{ url_for('my_booking') }}">
+    <div class="hstat-n">{{ booking_cnt }}</div><div class="hstat-l">咨询预约</div>
+  </a>
+  <a class="hstat" href="{{ url_for('treehole') }}">
+    <div class="hstat-n">{{ post_cnt }}</div><div class="hstat-l">树洞动态</div>
+  </a>
 </div>
 
-{% if latest %}
-<div class="card" style="margin-top:18px">
-  <h3>📌 最近一次测评</h3>
-  你于 <b>{{ latest.created_at.strftime('%Y-%m-%d') }}</b> 完成了
-  <span class="tag">{{ latest.scale_code|upper }}</span>，
-  结果：<b>{{ latest.level }}</b>（{{ latest.score }}分）
-  &nbsp;<a href="{{ url_for('history') }}">查看全部历史 →</a>
+<div class="card">
+  <h3>📌 我的最近状态</h3>
+  {% if latest %}
+  <p style="margin-top:8px">
+    最近一次测评 <b>{{ latest.created_at.strftime('%m-%d') }}</b>
+    <span class="tag">{{ latest.scale_code|upper }}</span>
+    结果 <b>{{ latest.level }}</b>（{{ latest.score }}分）
+    &nbsp;<a href="{{ url_for('history') }}">查看历史 →</a>
+  </p>
+  {% else %}
+  <p style="color:#868e96;margin-top:8px">还没有测评记录，<a href="{{ url_for('assessments') }}">做一次专业自评 →</a></p>
+  {% endif %}
+  <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+    <a class="btn" href="{{ url_for('chat') }}">💬 现在就想说说</a>
+    <a class="btn btn-sky" href="{{ url_for('relax') }}">🧘 有点紧绷，去减压</a>
+    <a class="btn btn-mint" href="{{ url_for('assessments') }}">📋 做个测评</a>
+  </div>
 </div>
-{% endif %}
+
+<div class="card help-strip">
+  <h3 style="color:#c92a2a">🆘 很难受？你不是一个人</h3>
+  <p style="font-size:14px;color:#495057;margin:6px 0 10px">若你正经历强烈痛苦或自伤念头，请立刻联系：</p>
+  <div class="hotline-row">
+    <div class="hot"><b>12356</b><span>全国心理援助热线 · 24h</span></div>
+    <div class="hot"><b>400-161-9995</b><span>希望24危机干预</span></div>
+    <div class="hot"><b>12355</b><span>青少年服务台</span></div>
+  </div>
+  <p style="font-size:13px;margin-top:10px">
+    也可 <a href="{{ url_for('booking') }}">在线预约本校咨询师</a>（免费保密），或前往学校心理咨询中心。
+  </p>
+</div>
+<style>
+.home-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.hstat{background:#fff;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 14px rgba(255,107,107,.08)}
+.hstat-n{font-size:30px;font-weight:800;color:var(--brand)}
+.hstat-l{font-size:13px;color:var(--ink2);margin-top:2px}
+.help-strip{border-left:5px solid #c92a2a}
+.hotline-row{display:flex;gap:14px;flex-wrap:wrap}
+.hot{flex:1;min-width:180px;background:#fff5f5;border-radius:12px;padding:12px 16px}
+.hot b{font-size:20px;color:#c92a2a;display:block}
+.hot span{font-size:12px;color:#868e96}
+@media(max-width:700px){.home-stats{grid-template-columns:repeat(2,1fr)}}
+</style>
 {% endblock %}
