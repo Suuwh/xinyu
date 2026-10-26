@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}注册 · 心屿{% endblock %}
+{% block body %}
+<div class="auth-wrap">
+  <div class="card">
+    <div class="auth-title">开启你的心屿之旅 ✨</div>
+    <div class="auth-sub">只需要一点点信息，我们就陪你开始</div>
+    <form method="post">
+      <label class="f">用户名（登录用）</label>
+      <input type="text" name="username" required>
+      <label class="f">昵称</label>
+      <input type="text" name="real_name" required>
+      <label class="f">密码</label>
+      <input type="password" name="password" required>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><label class="f">性别</label>
+          <select name="gender"><option>保密</option><option>男</option><option>女</option></select></div>
+        <div style="flex:1"><label class="f">年级</label>
+          <select name="grade"><option>大一</option><option>大二</option><option>大三</option><option>大四</option></select></div>
+      </div>
+      <label class="f">专业</label>
+      <input type="text" name="major" placeholder="如：软件工程">
+      <div style="margin-top:18px"><button class="btn" style="width:100%">创建账号</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

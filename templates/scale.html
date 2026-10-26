@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ scale.name }} · 心屿{% endblock %}
+{% block body %}
+<div class="card">
+  <h2>{{ scale.name }}</h2>
+  <p style="color:#868e96;font-size:14px">{{ scale.desc }}</p>
+  <form method="post">
+    {% for q in scale.questions %}
+      <div style="margin:16px 0;padding:14px;background:#fff8f0;border-radius:12px">
+        <b>{{ loop.index }}. {{ q }}</b>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:14px">
+          {% for label, val in scale.options %}
+          <label style="font-size:14px;color:#495057;display:flex;align-items:center;gap:4px">
+            <input type="radio" name="q" value="{{ val }}" required> {{ label }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+    <button class="btn" style="width:100%;margin-top:10px">提交结果</button>
+  </form>
+</div>
+{% endblock %}

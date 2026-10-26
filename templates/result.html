@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}测评结果 · 心屿{% endblock %}
+{% block body %}
+<div class="card" style="text-align:center">
+  <h2>{{ scale.name }} · 结果</h2>
+  <div style="font-size:46px;font-weight:800;color:#ff6b6b">{{ r.score }}</div>
+  <div><span class="tag tag-orange">{{ r.level }}</span></div>
+  <p style="margin-top:16px;text-align:left">{{ r.advice }}</p>
+  {% if r.extra %}
+  <p style="text-align:left;margin-top:10px;color:#1971c2">
+    正性情绪：{{ r.extra.pa }} 分 ｜ 负性情绪：{{ r.extra.na }} 分
+  </p>
+  {% endif %}
+  {% if r.level in ['重度抑郁','中重度抑郁','重度焦虑','高度孤独感','高压力','重度失眠','困扰严重'] %}
+  <div style="margin-top:16px;background:#ffe3e3;color:#c92a2a;padding:14px;border-radius:12px">
+    你目前的状态值得被认真对待，建议尽快预约心理咨询，或拨打24h热线 400-161-9995。
+  </div>
+  {% endif %}
+  <div style="margin-top:18px">
+    <a class="btn" href="{{ url_for('assessments') }}">继续其他测评</a>
+    <a class="btn btn-sky" href="{{ url_for('history') }}">查看历史</a>
+    <a class="btn btn-mint" href="{{ url_for('booking') }}">预约咨询</a>
+  </div>
+</div>
+{% endblock %}

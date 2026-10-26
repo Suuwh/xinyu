@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}心屿 · 阳光心理健康平台{% endblock %}</title>
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+{% block head %}{% endblock %}
+</head>
+<body>
+<nav class="topnav">
+  <div class="nav-inner">
+    <a class="brand" href="{{ url_for('index') }}">🌊 心屿</a>
+    <div class="nav-links">
+      {% if u %}
+        {% if u.role == 'student' %}
+          <a href="{{ url_for('chat') }}">AI倾诉</a>
+          <a href="{{ url_for('assessments') }}">心理测评</a>
+          <a href="{{ url_for('treehole') }}">匿名树洞</a>
+          <a href="{{ url_for('mood') }}">情绪曲线</a>
+          <a href="{{ url_for('booking') }}">预约咨询</a>
+          <a href="{{ url_for('learn') }}">心理成长</a>
+        {% else %}
+          <a href="{{ url_for('teacher_home') }}">教师首页</a>
+          <a href="{{ url_for('dash') }}">数据看板</a>
+          <a href="{{ url_for('alerts') }}">预警工单</a>
+          <a href="{{ url_for('manage_booking') }}">预约管理</a>
+          <a href="{{ url_for('treehole') }}">学生树洞</a>
+          <a href="{{ url_for('learn') }}">成长资源</a>
+          <a href="{{ url_for('chat') }}">AI倾诉</a>
+        {% endif %}
+        <span class="nav-user">👤 {{ u.real_name or u.username }}</span>
+        <a href="{{ url_for('logout') }}">退出</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">登录</a>
+        <a href="{{ url_for('register') }}">注册</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flashes">
+      {% for cat, m in messages %}<div class="flash flash-{{ cat }}">{{ m }}</div>{% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<main class="container">{% block body %}{% endblock %}</main>
+
+<footer class="footer">心屿 · AI校园心理健康平台 | 教学竞赛演示，不能替代专业医疗诊断 · 24h危机热线 400-161-9995</footer>
+</body>
+</html>

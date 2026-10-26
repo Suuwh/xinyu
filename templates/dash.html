@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}数据看板 · 心屿{% endblock %}
+{% block head %}<script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>{% endblock %}
+{% block body %}
+<div class="hero-banner" style="background:linear-gradient(120deg,#1c6dd9,#15aabf)">
+  <h1>📊 学生心理健康看板</h1>
+  <p>多量表横向分布，帮助你快速定位需要重点关注的学生群体。</p>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px" id="kpis">
+  <a class="stat" href="{{ url_for('alerts') }}"><div class="n" id="kOpen">-</div><div class="l">待处理预警</div><div class="d">点击查看 →</div></a>
+  <div class="stat"><div class="n" id="kTotal">-</div><div class="l">在册学生总数</div><div class="d">平台注册学生</div></div>
+  <div class="stat"><div class="n" id="kActive">-</div><div class="l">近30天主动测评学生</div><div class="d">越活跃越健康</div></div>
+  <div class="stat"><div class="n" id="kScale">-</div><div class="l">累计测评人次</div><div class="d">含9套量表</div></div>
+</div>
+
+<div class="card"><div id="scaleChart" style="width:100%;height:340px"></div></div>
+<div class="card" style="margin-top:18px"><div id="alertChart" style="width:100%;height:260px"></div></div>
+
+<div class="card">
+  <h3>🔍 最近测评（含得分异常者优先跟进）</h3>
+  <table class="tbl" id="recentTbl">
+    <tr><th>学生</th><th>量表</th><th>得分</th><th>结果</th></tr>
+  </table>
+</div>
+<script>
+fetch('/api/dash/overview').then(function(r){return r.json();}).then(function(d){
+  document.getElementById('kOpen').textContent = d.open;
+  document.getElementById('kTotal').textContent = d.total;
+  document.getElementById('kActive').textContent = d.active;
+  document.getElementById('kScale').textContent =
+    Object.values(d.by_scale).reduce(function(a,b){return a+b.length;},0);
+
+  // 各量表平均得分分布
+  var codes=[], avgs=[];
+  Object.keys(d.by_scale).forEach(function(k){
+    var arr=d.by_scale[k];
+    codes.push(k.toUpperCase());
+    avgs.push(+(arr.reduce(function(a,b){return a+b;},0)/arr.length).toFixed(1));
+  });
+  var c1=echarts.init(document.getElementById('scaleChart'));
+  c1.setOption({backgroundColor:'transparent',
+    title:{text:'各量表平均得分分布（学生群体）',textStyle:{fontSize:15}},
+    tooltip:{trigger:'axis',triggerOn:'click',renderMode:'richText',confine:true},
+    xAxis:{type:'category',data:codes,axisLabel:{rotate:20}},
+    yAxis:{type:'value'},
+    series:[{type:'bar',data:avgs,itemStyle:{color:'#15aabf',borderRadius:[6,6,0,0]}}]});
+
+  var c2=echarts.init(document.getElementById('alertChart'));
+  c2.setOption({backgroundColor:'transparent',
+    title:{text:'近7日预警数量',textStyle:{fontSize:15}},
+    tooltip:{trigger:'axis',triggerOn:'click',renderMode:'richText',confine:true},
+    xAxis:{type:'category',data:d.days},yAxis:{type:'value',minInterval:1},
+    series:[{type:'bar',data:d.acounts,itemStyle:{color:'#ff6b6b',borderRadius:[6,6,0,0]}}]});
+
+  var t=document.getElementById('recentTbl');
+  d.latest.slice(0,10).forEach(function(a){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+(a.user||'匿名')+'</td><td>'+a.scale.toUpperCase()+
+      '</td><td>'+a.score+'</td><td><span class="tag '+(a.level.indexOf('重')>-1?'tag-red':'tag-orange')+'">'+a.level+'</span></td>';
+    t.appendChild(tr);
+  });
+});
+</script>
+{% endblock %}

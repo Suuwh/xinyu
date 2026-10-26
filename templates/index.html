@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}首页 · 心屿{% endblock %}
+{% block body %}
+<div class="hero-banner">
+  <h1>你好，{{ u.real_name or u.username }} 🌻</h1>
+  <p>今天的心情，想和谁聊聊？心屿一直在这里，安静地陪着你。</p>
+</div>
+
+{% if open_alerts %}
+<div class="card" style="border:2px solid #ffd43b">
+  🔔 你有 <b>{{ open_alerts }}</b> 条情绪预警，请关注，必要时预约咨询师聊聊。
+</div>
+{% endif %}
+
+<div class="feature-grid">
+  <a class="feature" href="{{ url_for('chat') }}"><div class="ic">💬</div><h4>AI 倾听陪伴</h4><p>随时诉说，不评判、不泄露</p></a>
+  <a class="feature" href="{{ url_for('assessments') }}"><div class="ic">📋</div><h4>专业心理测评</h4><p>9套国际量表，科学自评</p></a>
+  <a class="feature" href="{{ url_for('treehole') }}"><div class="ic">🌳</div><h4>匿名树洞</h4><p>把心事说给陌生人听</p></a>
+  <a class="feature" href="{{ url_for('mood') }}"><div class="ic">📈</div><h4>我的情绪曲线</h4><p>记录心情，看见自己的变化</p></a>
+  <a class="feature" href="{{ url_for('booking') }}"><div class="ic">📅</div><h4>预约咨询</h4><p>一对一，免费保密</p></a>
+  <a class="feature" href="{{ url_for('learn') }}"><div class="ic">📚</div><h4>心理成长</h4><p>科普、视频、好书推荐</p></a>
+</div>
+
+{% if latest %}
+<div class="card" style="margin-top:18px">
+  <h3>📌 最近一次测评</h3>
+  你于 <b>{{ latest.created_at.strftime('%Y-%m-%d') }}</b> 完成了
+  <span class="tag">{{ latest.scale_code|upper }}</span>，
+  结果：<b>{{ latest.level }}</b>（{{ latest.score }}分）
+  &nbsp;<a href="{{ url_for('history') }}">查看全部历史 →</a>
+</div>
+{% endif %}
+{% endblock %}

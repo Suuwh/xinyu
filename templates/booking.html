@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}预约咨询 · 心屿{% endblock %}
+{% block body %}
+<div class="hero-banner">
+  <h1>📅 预约一对一咨询</h1>
+  <p>所有咨询免费、保密。每位咨询师都有专业受训背景，放心把心事交给TA。</p>
+</div>
+
+{% for c in counselors %}
+{% set info = infos[c.id] %}
+<div class="card" style="display:flex;gap:20px;flex-wrap:wrap">
+  <div style="font-size:56px;line-height:1">{{ info.avatar if info else '🧑‍🏫' }}</div>
+  <div style="flex:1;min-width:260px">
+    <b style="font-size:18px">{{ c.real_name or c.username }} 老师</b>
+    <span class="tag tag-blue">{{ info.title if info else '心理咨询师' }}</span>
+    <span class="tag tag-orange">⭐ {{ '%.1f' % info.rating if info else '4.9' }}</span>
+    <p style="color:#e8590c;font-size:13px;margin-top:6px">🗂 擅长：{{ info.specialty if info else '情绪困扰、学业压力、人际关系' }}</p>
+    <p style="font-size:14px;color:#495057;margin-top:6px">{{ info.bio if info else '' }}</p>
+    <p style="font-size:13px;color:#868e96;margin-top:6px">📍 地点：{{ info.location if info else '大学生活动中心 302 心理辅导室' }}</p>
+  </div>
+  <form method="post" style="width:230px">
+    <input type="hidden" name="counselor_id" value="{{ c.id }}">
+    <label class="f">日期</label><input type="date" name="date" required>
+    <label class="f">时段</label>
+    <select name="time_slot">
+      <option>周一 14:00-15:00</option><option>周二 10:00-11:00</option>
+      <option>周三 15:00-16:00</option><option>周四 19:00-20:00</option>
+      <option>周五 14:00-15:00</option>
+    </select>
+    <label class="f">想聊的主题</label>
+    <input type="text" name="topic" placeholder="如：考试焦虑">
+    <button class="btn" style="width:100%;margin-top:8px">预约</button>
+  </form>
+</div>
+{% endfor %}
+{% endblock %}

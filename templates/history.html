@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}测评历史 · 心屿{% endblock %}
+{% block body %}
+<h2 style="color:#0e4d6e;margin-bottom:14px">我的测评历史</h2>
+<div class="card">
+{% if rows %}
+<table class="tbl">
+  <tr><th>时间</th><th>量表</th><th>得分</th><th>结果</th><th>建议</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+    <td>{{ r.scale_code|upper }}</td>
+    <td><b>{{ r.score }}</b></td>
+    <td>
+      {% if '重度' in r.level or '中重度' in r.level %}<span class="tag tag-red">{{ r.level }}</span>
+      {% elif '中度' in r.level %}<span class="tag tag-orange">{{ r.level }}</span>
+      {% else %}<span class="tag tag-green">{{ r.level }}</span>{% endif %}
+    </td>
+    <td style="font-size:13px;color:#46586a">{{ r.advice }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+  <p style="color:#8a99a8">还没有测评记录。<a href="{{ url_for('assessments') }}">去做第一次测评 →</a></p>
+{% endif %}
+</div>
+{% endblock %}

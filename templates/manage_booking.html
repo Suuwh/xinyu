@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}预约管理 · 心屿{% endblock %}
+{% block body %}
+<div class="card">
+  <h2>📅 我的咨询预约</h2>
+  {% for r in rows %}
+  {% set st = users.get(r.student_id) %}
+  <div style="border:2px solid #fff1e6;border-radius:14px;padding:16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <b>{{ st.real_name or st.username }}</b>
+        <span class="tag tag-blue">{{ st.grade or '' }} · {{ st.major or '' }}</span>
+        <span class="tag {{ 'tag-orange' if r.status=='pending' else 'tag-green' }}">
+          {{ {'pending':'待确认','confirmed':'已确认','done':'已完成','cancelled':'已取消'}.get(r.status,r.status) }}
+        </span>
+      </div>
+      <div style="color:#868e96;font-size:13px">{{ r.created_at.strftime('%Y-%m-%d %H:%M') }} 提交</div>
+    </div>
+    <p style="margin-top:8px;font-size:14px">
+      🕐 {{ r.date }} {{ r.time_slot }}<br>
+      💭 学生自述主题：<b>{{ r.topic or '未填写' }}</b>
+    </p>
+    {% if r.status in ['pending','confirmed'] %}
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <a class="btn btn-sm btn-sky" href="{{ url_for('manage_booking_action', aid=r.id, action='confirmed') }}">确认</a>
+      <a class="btn btn-sm btn-mint" href="{{ url_for('manage_booking_action', aid=r.id, action='done') }}">已完成</a>
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('manage_booking_action', aid=r.id, action='cancelled') }}">取消</a>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}<p style="color:#adb5bd">暂无学生预约。</p>{% endfor %}
+</div>
+{% endblock %}

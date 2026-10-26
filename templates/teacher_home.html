@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}教师工作台 · 心屿{% endblock %}
+{% block body %}
+<div class="hero-banner" style="background:linear-gradient(120deg,#1c6dd9,#15aabf)">
+  <h1>下午好，{{ u.real_name or u.username }} 老师 👋</h1>
+  <p>今天也请温柔对待每一个把心事交给你的学生。以下是你需要关注的工作。</p>
+</div>
+
+<div class="feature-grid">
+  <a class="feature" href="{{ url_for('dash') }}"><div class="ic">📊</div><h4>学生心理概览</h4><p>测评分布 · 趋势 · 高危识别</p></a>
+  <a class="feature" href="{{ url_for('alerts') }}"><div class="ic">🚨</div><h4>预警工单</h4><p>AI与量表自动识别，优先处理</p></a>
+  <a class="feature" href="{{ url_for('manage_booking') }}"><div class="ic">📅</div><h4>咨询预约</h4><p>查看学生预约与详情</p></a>
+  <a class="feature" href="{{ url_for('treehole') }}"><div class="ic">🌳</div><h4>匿名树洞巡查</h4><p>了解学生真实情绪氛围</p></a>
+  <a class="feature" href="{{ url_for('learn') }}"><div class="ic">📚</div><h4>教学与成长资源</h4><p>科普、视频、专业书单</p></a>
+  <a class="feature" href="{{ url_for('chat') }}"><div class="ic">💬</div><h4>AI 体验</h4><p>以学生视角试用倾诉功能</p></a>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <h3>📌 今日寄语</h3>
+  <p style="color:#495057">心理咨询不是修理“有问题的人”，而是陪一个正在淋雨的人，一起找一把伞。
+    你的倾听，本身就是疗愈。</p>
+</div>
+{% endblock %}

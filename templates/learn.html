@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}心理成长 · 心屿{% endblock %}
+{% block body %}
+<div class="hero-banner">
+  <h1>🌱 心理成长充电站</h1>
+  <p>专业科普、治愈影音、好书推荐，碎片时间也能慢慢照顾自己。</p>
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+  <a class="btn {{ '' if tab=='article' else 'btn-ghost' }}" href="{{ url_for('learn', tab='article') }}">📖 心晴手札</a>
+  <a class="btn btn-sky {{ '' if tab=='video' else 'btn-ghost' }}" href="{{ url_for('learn', tab='video') }}">🎬 疗愈影音</a>
+  <a class="btn btn-mint {{ '' if tab=='book' else 'btn-ghost' }}" href="{{ url_for('learn', tab='book') }}">📗 枕边书单</a>
+</div>
+
+<div class="masonry">
+  {% for r in rows %}
+  <div class="mcard">
+    <a href="{{ url_for('learn_post', rid=r.id) }}" style="color:#343a40">
+      {% if r.kind=='video' %}<div style="font-size:38px">🎬</div>
+      {% elif r.kind=='book' %}<div style="font-size:38px">📗</div>
+      {% else %}<div style="font-size:38px">📖</div>{% endif %}
+      <div style="font-weight:700;margin:8px 0 6px">{{ r.title }}</div>
+      <div style="font-size:13px;color:#868e96">{{ r.summary }}</div>
+    </a>
+    <div style="margin-top:10px;font-size:12px;color:#adb5bd">
+      ✍️ {{ r.author }} · {{ r.created_at.strftime('%Y-%m-%d') }}
+      {% if r.source %}<br>来源：{{ r.source }}{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="mcard">暂无内容，敬请期待。</div>
+  {% endfor %}
+</div>
+{% endblock %}

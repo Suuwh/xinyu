@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}预警工单 · 心屿{% endblock %}
+{% block body %}
+<div class="card">
+  <h2>🚨 心理预警工单</h2>
+  <p style="color:#868e96;font-size:13px">AI对话、量表、树洞三路自动识别，按严重程度置顶。</p>
+  <table class="tbl">
+    <tr><th>时间</th><th>学生</th><th>来源</th><th>触发内容</th><th>级别</th><th>状态</th><th>处理</th></tr>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.created_at.strftime('%m-%d %H:%M') }}</td>
+      <td>{{ users.get(r.user_id,'') }}</td>
+      <td>{{ {'chat':'AI对话','treehole':'树洞','assessment':'量表'}.get(r.source,r.source) }}</td>
+      <td>{{ r.content[:60] }}</td>
+      <td><span class="tag tag-red">{{ '高危' if r.level=='high' else '关注' }}</span></td>
+      <td><span class="tag {{ 'tag-green' if r.status=='handled' else 'tag-orange' }}">{{ '已处理' if r.status=='handled' else '待处理' }}</span></td>
+      <td>{% if r.status=='open' %}
+        <form method="post" action="{{ url_for('alert_handle', aid=r.id) }}" style="display:flex;gap:6px">
+          <input type="text" name="note" placeholder="处理备注" style="width:120px;padding:6px">
+          <button class="btn btn-sm btn-mint">办结</button>
+        </form>{% else %}{{ r.note }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
