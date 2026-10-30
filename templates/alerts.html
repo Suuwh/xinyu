@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}预警中心 · 心屿{% endblock %}
+{% block title %}预警中心 · 心隅{% endblock %}
 {% block body %}
 <div class="hero-banner" style="background:linear-gradient(120deg,#c92a2a,#e8590c)">
   <h1>🚨 学生预警中心</h1>
@@ -122,6 +122,17 @@ document.querySelectorAll('.al-card').forEach(function(card){
           '<p>'+esc(e.detail)+'</p><span class="dz-ev-extra">'+esc(e.extra)+'</span></div>';
       });
       html+=sec('触发证据（'+(d.evidence||[]).length+'条）','📌', evh||'<div class="dz-empty">暂无详细证据</div>');
+      // IRT 自适应测评
+      var irh='';
+      (d.irts||[]).forEach(function(t){
+        var lvCls = (t.level.indexOf('重')>=0||t.level.indexOf('危险')>=0)?'dz-st-red':(t.level.indexOf('中')>=0?'dz-st-orange':'');
+        irh+='<div class="dz-irt"><div class="dz-irt-top"><b>'+esc(t.name)+'</b>'+
+          '<span class="dz-st '+lvCls+'">'+esc(t.level)+'</span></div>'+
+          '<div class="dz-irt-score">T'+t.t_score+' 分 · θ'+(t.theta>=0?'+':'')+t.theta+
+          ' · SE '+t.se+' · '+t.n_items+'题</div>'+
+          '<div class="dz-irt-time">'+esc(t.time)+'</div></div>';
+      });
+      html+=sec('IRT 自适应测评记录（项目反应理论）','🎯', irh||'<div class="dz-empty">暂无 IRT 测评</div>');
       // 判定依据
       var bh='';
       (d.basis||[]).forEach(function(b){
@@ -186,6 +197,12 @@ document.querySelectorAll('.al-card').forEach(function(card){
 .dz-tbl td:nth-child(odd){color:#868e96;width:18%;white-space:nowrap}
 .dz-st{background:#e7f5ff;color:#1971c2;border-radius:8px;padding:2px 8px;font-size:11.5px;white-space:nowrap}
 .dz-st-red{background:#ffe3e3;color:#c92a2a}
+.dz-st-orange{background:#fff4e6;color:#d9480f}
+.dz-irt{background:#f8f6ff;border:1px solid #e5dbff;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.dz-irt-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px}
+.dz-irt-top b{font-size:13px;color:#4d2c91}
+.dz-irt-score{font-size:12.5px;color:#5f3dc4;font-weight:600}
+.dz-irt-time{font-size:11px;color:#adb5bd;margin-top:3px}
 .dz-conclusion{background:linear-gradient(120deg,#fff0ec,#ffe8e6);border:1px solid #ffc9c9;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#8a3b2d;line-height:1.9}
 .dz-empty{color:#adb5bd;text-align:center;padding:14px;font-size:13px}
 .dz-ev{background:#fff9f9;border:1px solid #ffe3e3;border-radius:10px;padding:10px 12px;margin-bottom:8px}

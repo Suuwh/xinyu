@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}自适应测评中 · 心隅{% endblock %}
+{% block body %}
+<div class="card" style="max-width:720px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <h2 style="margin:0">{{ scale.name }}</h2>
+    <a href="{{ url_for('irt_home') }}" style="font-size:13px;color:#868e96">← 退出测评</a>
+  </div>
+  <p style="font-size:13px;color:#868e96;margin-top:0">
+    自适应测评：算法将根据你的每一次作答自动选择下一题，在最少的题量下达到目标精度即结束；若本题库题目全部答完也会结束。
+  </p>
+
+  <!-- 进度面板 -->
+  <div style="background:#f8f9fa;border-radius:12px;padding:12px 14px;margin:12px 0">
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+      <span>已作答题数：<b id="nCount">0</b> 题（本题库共 {{ scale.max_items }} 题）</span>
+      <span>当前 θ 估计：<b id="thetaVal">0.00</b>（SE <b id="seVal">1.00</b>）</span>
+    </div>
+    <div style="height:8px;background:#e9ecef;border-radius:4px;overflow:hidden">
+      <div id="progBar" style="height:100%;width:0;background:linear-gradient(90deg,#4dabf7,#7048e8);transition:width .3s"></div>
+    </div>
+    <p style="font-size:11.5px;color:#adb5bd;margin:6px 0 0">
+      θ 越高代表该维度症状越重；SE 越小代表测量越准。作答不少于 5 题且 SE ≤ 0.3 时自动完成；若题目全部答完也会结束。
+    </p>
+  </div>
+
+  <!-- 题目区 -->
+  <div id="qBox">
+    <div id="qDim" style="display:inline-block;font-size:12px;color:#5f3dc4;background:#f3f0ff;padding:3px 10px;border-radius:8px;margin-bottom:10px"></div>
+    <h3 id="qStem" style="font-size:18px;line-height:1.6;margin:0 0 18px;min-height:54px">正在加载第一题…</h3>
+    <div id="qOpts" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+
+  <div id="qLoading" style="display:none;text-align:center;padding:30px;color:#868e96">正在根据你的作答选题…</div>
+</div>
+
+<form id="finishForm" method="get" action="{{ url_for('irt_finish', tid=rec.id) }}" style="display:none"></form>
+
+<style>
+.opt-btn{text-align:left;padding:12px 16px;border:2px solid #e9ecef;border-radius:12px;background:#fff;font-size:14.5px;cursor:pointer;transition:.15s}
+.opt-btn:hover{border-color:#7048e8;background:#f8f5ff;transform:translateX(3px)}
+</style>
+<script>
+var state = { current: null, n: 0, max: {{ scale.max_items|tojson }} };
+
+function renderQuestion(q) {
+  document.getElementById('qLoading').style.display = 'none';
+  document.getElementById('qBox').style.display = 'block';
+  document.getElementById('qDim').textContent = q.dim ? '维度：' + q.dim : '';
+  document.getElementById('qStem').textContent = q.stem;
+  var box = document.getElementById('qOpts');
+  box.innerHTML = '';
+  q.options.forEach(function(opt, idx) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'opt-btn';
+    btn.textContent = opt;
+    btn.onclick = function() { submitAnswer(q.id, idx); };
+    box.appendChild(btn);
+  });
+  state.current = q.id;
+}
+
+function submitAnswer(itemId, score) {
+  document.getElementById('qLoading').style.display = 'block';
+  document.getElementById('qBox').style.opacity = '0.5';
+  fetch('/irt/answer', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({item_id: itemId, score: score})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    document.getElementById('qBox').style.opacity = '1';
+    if (!d.ok) { alert(d.error || '提交失败'); return; }
+    state.n = d.n;
+    document.getElementById('nCount').textContent = d.n;
+    document.getElementById('thetaVal').textContent = (d.theta >= 0 ? '+' : '') + d.theta;
+    document.getElementById('seVal').textContent = d.se;
+    document.getElementById('progBar').style.width = Math.min(100, d.n / state.max * 100) + '%';
+    if (d.done) {
+      var tip;
+      if (d.stop_reason === 'se_reached') {
+        tip = '✅ 已达到目标测量精度（SE ≤ 0.3），正在生成报告…';
+      } else {
+        tip = '📋 本题库题目已全部作答完毕，正在生成报告…';
+      }
+      document.getElementById('qLoading').textContent = tip;
+      setTimeout(function(){ document.getElementById('finishForm').submit(); }, 600);
+      return;
+    }
+    renderQuestion(d.next);
+  }).catch(function(e) {
+    document.getElementById('qBox').style.opacity = '1';
+    alert('网络错误：' + e);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  fetch('/irt/answer', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({item_id: '__init__', score: -1})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if (d.ok && d.next) renderQuestion(d.next);
+    else alert(d.error || '初始化失败');
+  });
+});
+</script>
+{% endblock %}

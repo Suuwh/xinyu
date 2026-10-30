@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}登录 · 心屿{% endblock %}
+{% block title %}登录 · 心隅{% endblock %}
 {% block body %}
 <div class="auth-wrap">
   <div class="card auth-card">
@@ -14,11 +14,12 @@
     <!-- 学生登录 -->
     <div class="login-pane" id="pane-student">
       <form method="post" id="stuForm" autocomplete="on">
+        <input type="hidden" name="role" value="student">
         <label class="f">用户名</label>
         <input type="text" name="username" id="stuUser" autocomplete="username" required>
         <label class="f">密码</label>
         <input type="password" name="password" autocomplete="current-password" required>
-        <div style="margin-top:14px"><button class="btn" style="width:100%">进入心屿</button></div>
+        <div style="margin-top:14px"><button class="btn" style="width:100%">进入心隅</button></div>
         <label class="remember"><input type="checkbox" name="remember" id="stuRemember" checked> 记住学生账号</label>
       </form>
       <div class="auth-divider"><span>快捷认证登录</span></div>
@@ -37,11 +38,12 @@
     <!-- 心理咨询师登录 -->
     <div class="login-pane" id="pane-counselor" style="display:none">
       <form method="post" id="couForm" autocomplete="on">
+        <input type="hidden" name="role" value="counselor">
         <label class="f">用户名</label>
         <input type="text" name="username" id="couUser" autocomplete="username" required>
         <label class="f">密码</label>
         <input type="password" name="password" autocomplete="current-password" required>
-        <div style="margin-top:14px"><button class="btn" style="width:100%">进入心屿</button></div>
+        <div style="margin-top:14px"><button class="btn" style="width:100%">进入心隅</button></div>
         <label class="remember"><input type="checkbox" name="remember" id="couRemember" checked> 记住咨询师账号</label>
       </form>
       <div class="auth-divider"><span>执业资质认证登录</span></div>

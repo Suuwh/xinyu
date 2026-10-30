@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}情绪日记 · 心屿{% endblock %}
+{% block title %}情绪日记 · 心隅{% endblock %}
 {% block head %}<script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>{% endblock %}
 {% block body %}
 <div class="hero-banner">
@@ -233,12 +233,21 @@ function loadChart(range){
       backgroundColor: 'transparent',
       title: {text: '心情变化曲线（-5 ~ +5）', subtext: {week:'近7天',month:'近30天',year:'近365天',all:'全部记录'}[range] + ' · 数值为你亲自选择的心情',
               textStyle: {fontSize: 15}, subtextStyle: {fontSize: 11, color: '#868e96'}},
-      tooltip: {trigger: 'axis', triggerOn: 'click', renderMode: 'richText', confine: true},
+      tooltip: {trigger: 'axis', triggerOn: 'click', renderMode: 'richText', confine: true,
+        formatter: function(ps){
+          var i = ps[0].dataIndex, nl = String.fromCharCode(10);
+          var date = (d.dates && d.dates[i]) ? d.dates[i] : d.labels[i];
+          var v = d.vals[i];
+          if(v === null || v === undefined) return date + nl + '当天未记录心情';
+          return date + nl + '心情值：' + v + '（-5 ~ +5）';
+        }},
       grid: {left: 42, right: 22, top: 78, bottom: 34, containLabel: true},
-      xAxis: {type: 'category', boundaryGap: false, data: d.labels, axisLabel: {fontSize: 11}},
+      xAxis: {type: 'category', boundaryGap: false, data: d.labels,
+              axisLabel: {fontSize: 11, hideOverlap: true}},
       yAxis: {type: 'value', min: -5, max: 5, splitNumber: 5},
       series: [{
-        name: '心情', type: 'line', data: d.vals, smooth: true, symbol: 'circle', symbolSize: 8,
+        name: '心情', type: 'line', data: d.vals, smooth: true, connectNulls: false,
+        symbol: 'circle', symbolSize: 8, showSymbol: true,
         lineStyle: {color: '#ff6b6b', width: 3}, itemStyle: {color: '#ff6b6b'},
         areaStyle: {color: 'rgba(255,107,107,.18)'},
         markLine: {silent: true, symbol: 'none', lineStyle: {color: '#adb5bd', type: 'dashed'},

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}IRT 测评历史 · 心隅{% endblock %}
+{% block body %}
+<div class="hero-banner"><h1>📚 我的 IRT 测评历史</h1><p>所有自适应测评记录仅你可见。</p></div>
+<div class="card">
+  {% if rows %}
+  <table class="tbl">
+    <tr><th>时间</th><th>量表</th><th>θ</th><th>T 分</th><th>题数</th><th>判定</th><th></th></tr>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>{{ r.scale_code|upper }}</td>
+      <td>{{ '%+.2f'|format(r.theta) }}</td>
+      <td>{{ r.t_score }}</td>
+      <td>{{ r.n_items }}</td>
+      <td><span class="tag {% if '重' in r.level %}tag-red{% elif '轻' in r.level %}tag-orange{% else %}tag-blue{% endif %}">{{ r.level }}</span></td>
+      <td><a href="{{ url_for('irt_result', tid=r.id) }}">查看报告 →</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p style="text-align:center;color:#adb5bd;padding:30px">还没有 IRT 测评记录，<a href="{{ url_for('irt_home') }}">去做一次自适应测评 →</a></p>
+  {% endif %}
+</div>
+{% endblock %}

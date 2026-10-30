@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}数据看板 · 心屿{% endblock %}
+{% block title %}数据看板 · 心隅{% endblock %}
 {% block head %}<script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>{% endblock %}
 {% block body %}
 <div class="hero-banner" style="background:linear-gradient(120deg,#1c6dd9,#15aabf)">
@@ -7,12 +7,12 @@
   <p>有问题学生定位 · 心理严重程度分布 · 测评使用情况 · 预警趋势，多维可视化</p>
 </div>
 
-<!-- KPI 卡片：每个指标都有独立去向 -->
+<!-- KPI卡片：每个指标都有独立去向 -->
 <div class="kpis-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px" id="kpis">
   <a class="stat" href="{{ url_for('alerts') }}"><div class="n" id="kOpen">-</div><div class="l">待处理预警</div><div class="d">进入工单处理 →</div></a>
   <div class="stat"><div class="n" id="kTotal">-</div><div class="l">在册学生总数</div><div class="d">平台注册学生</div></div>
-  <a class="stat" href="#recent"><div class="n" id="kActive">-</div><div class="l">近30天测评学生</div><div class="d">查看测评明细 →</div></a>
-  <a class="stat" href="#recent"><div class="n" id="kScale">-</div><div class="l">累计测评人次</div><div class="d">含18套专业量表 →</div></a>
+  <a class="stat" href="#recent"><div class="n" id="kActive">-</div><div class="l">近30天测评学生</div><div class="d">查看学生明细 →</div></a>
+  <a class="stat" href="#recent"><div class="n" id="kScale">-</div><div class="l">累计测评人次</div><div class="d">专业量表+IRT →</div></a>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
@@ -46,13 +46,13 @@
 </div>
 
 <div class="card" id="recent" style="scroll-margin-top:80px">
-  <h3>🔍 最近测评明细（按风险指数着色，点击学生查看档案）</h3>
-  <table class="tbl" id="recentTbl">
-    <tr><th>学生</th><th>量表</th><th>得分</th><th>风险指数</th><th>结果</th></tr>
-  </table>
+  <h3>🔍 学生测评总览（以学生为单位，点击学生查看完整档案）</h3>
+  <div id="studentGrid" style="margin-top:12px">
+    <p style="color:#adb5bd">加载中…</p>
+  </div>
 </div>
 
-<!-- 学生档案右侧抽屉（置于脚本之前，确保 DOM 先存在） -->
+<!-- 学生档案右侧抽屉（置于脚本之前，确保DOM先存在） -->
 <div class="drawer-mask" id="drawerMask"></div>
 <aside class="drawer" id="profileDrawer">
   <div class="drawer-head">
@@ -72,6 +72,62 @@ function openDrawer(){drawer.classList.add('open');drawerMask.classList.add('sho
 function closeDrawer(){drawer.classList.remove('open');drawerMask.classList.remove('show');}
 document.getElementById('drawerClose').onclick=closeDrawer;
 drawerMask.onclick=closeDrawer;
+
+/* ===== 全局工具与学生档案抽屉 ===== */
+function esc(s){var d=document.createElement('div');d.textContent=s==null?'—':s;return d.innerHTML;}
+function dzSection(title,icon,html){return '<div class="dz-sec"><h4>'+icon+' '+title+'</h4>'+html+'</div>';}
+function openProfile(sid){
+  var body=document.getElementById('drawerBody');
+  body.innerHTML='<div class="drawer-loading">加载中…</div>';
+  openDrawer();
+  fetch('/api/student_profile/'+sid).then(function(r){return r.json();}).then(function(d){
+    if(!d.ok){body.innerHTML='<div class="drawer-loading">档案加载失败</div>';return;}
+    var s=d.student;
+    var av = s.avatar.indexOf('/')===0 ? '<img class="dz-av-img" src="'+esc(s.avatar)+'">' : '<span>'+esc(s.avatar)+'</span>';
+    var html='<div class="dz-profile"><div class="dz-av">'+av+'</div>'+
+      '<div><h3>'+esc(s.name)+'</h3><p>'+esc(s.education_level)+' · '+esc(s.college)+'</p></div></div>';
+    html+=dzSection('基本信息','👤',
+      '<table class="dz-tbl">'+
+        '<tr><td>性别</td><td>'+esc(s.gender)+'</td><td>手机号</td><td>'+esc(s.phone)+'</td></tr>'+
+        '<tr><td>学号</td><td colspan="3">'+esc(s.student_id)+'</td></tr>'+
+        '<tr><td>院校</td><td colspan="3">'+esc(s.school)+'</td></tr>'+
+        '<tr><td>专业</td><td>'+esc(s.major)+'</td><td>班级</td><td>'+esc(s.class_name)+'</td></tr>'+
+        '<tr><td>年级</td><td>'+esc(s.grade)+'</td><td>学籍状态</td><td>'+esc(s.student_status)+'</td></tr>'+
+      '</table>');
+    var appth='';
+    d.appointments.forEach(function(a){
+      appth+='<tr><td>'+esc(a.date)+'<br><small>'+esc(a.time)+'</small></td><td>'+esc(a.counselor)+'</td><td>'+esc(a.topic)+'</td><td><span class="dz-st">'+esc(a.status)+'</span></td></tr>';
+    });
+    html+=dzSection('心理咨询预约记录（'+d.appointments.length+'）','📅',
+      '<table class="dz-tbl dz-list"><tr><th>时间</th><th>咨询师</th><th>主题</th><th>状态</th></tr>'+(appth||'<tr><td colspan="4" class="dz-empty">暂无预约记录</td></tr>')+'</table>');
+    var ash='';
+    d.assessments.forEach(function(a){
+      ash+='<tr><td>'+esc(a.name)+'</td><td>'+esc(a.score)+'</td><td>'+esc(a.level)+'</td><td>'+esc(a.time)+'</td></tr>';
+    });
+    html+=dzSection('心理测评记录（'+d.assessments.length+'）','📊',
+      '<table class="dz-tbl dz-list"><tr><th>量表</th><th>得分</th><th>结果</th><th>时间</th></tr>'+(ash||'<tr><td colspan="4" class="dz-empty">暂无测评记录</td></tr>')+'</table>');
+    var irh='';
+    (d.irts||[]).forEach(function(a){
+      var lvlCls = (a.level||'').indexOf('重')>=0?'style="color:#c92a2a;font-weight:600"':((a.level||'').indexOf('轻')>=0?'style="color:#e8590c"':'');
+      irh+='<tr><td><b>'+esc(a.scale)+'</b> <small>(自适应)</small></td><td>θ '+esc(a.theta)+' / T'+esc(a.t_score)+'</td><td '+lvlCls+'>'+esc(a.level)+'</td><td>'+esc(a.time)+' · '+esc(a.n)+'题</td></tr>';
+    });
+    html+=dzSection('IRT 自适应测评（'+(d.irts||[]).length+'）','🎯',
+      '<table class="dz-tbl dz-list"><tr><th>量表</th><th>θ / T分</th><th>风险等级</th><th>时间</th></tr>'+(irh||'<tr><td colspan="4" class="dz-empty">暂无 IRT 测评记录</td></tr>')+'</table>');
+    var alh='';
+    d.alerts.forEach(function(a){
+      alh+='<div class="dz-alert '+(a.level==='高'?'hi':'')+'"><div><b>['+esc(a.source)+'] '+esc(a.level)+'风险 · '+esc(a.status)+'</b><p>'+esc(a.content)+'</p>'+(a.note?'<small>处理备注：'+esc(a.note)+'</small>':'')+'</div><span class="dz-alert-time">'+esc(a.time)+'</span></div>';
+    });
+    html+=dzSection('预警与跟进记录（'+d.alerts.length+'）','⚠️',
+      alh||'<div class="dz-empty">暂无预警记录</div>');
+    var trh='';
+    d.trees.forEach(function(t){
+      trh+='<div class="dz-tree">'+(t.flag?'<span class="dz-flag">危机</span>':'')+'<b>'+esc(t.title)+'</b><small>'+esc(t.time)+'</small></div>';
+    });
+    html+=dzSection('近期树洞动态（'+d.trees.length+'）','🌳',
+      trh||'<div class="dz-empty">暂无树洞动态</div>');
+    body.innerHTML=html;
+  }).catch(function(){body.innerHTML='<div class="drawer-loading">档案加载失败</div>';});
+}
 
 fetch('/api/dash/overview').then(function(r){return r.json();}).then(function(d){
   document.getElementById('kOpen').textContent=d.open;
@@ -161,68 +217,36 @@ fetch('/api/dash/overview').then(function(r){return r.json();}).then(function(d)
     series:[{type:'pie',radius:['36%','58%'],center:['50%','48%'],label:{show:false},
       data:d.alert_src||[],color:['#1c6dd9','#37b24d','#f59f00','#fa5252']}]});
 
-  /* —— 最近测评明细（点击学生查看档案） —— */
-  var t=document.getElementById('recentTbl');
-  d.latest.slice(0,12).forEach(function(a){
-    var tr=document.createElement('tr');
-    var cls=a.risk>=60?'tag-red':(a.risk>=35?'tag-orange':'tag-green');
-    tr.dataset.sid=a.uid;
-    tr.innerHTML='<td><b class="th-stu">'+a.user+'</b></td><td>'+a.name+
-      '</td><td>'+a.score+'</td><td><b>'+a.risk+'</b></td><td><span class="tag '+cls+'">'+a.level+'</span></td>';
-    t.appendChild(tr);
-  });
-  /* 点击行 → 右侧抽屉查看学生完整档案 */
-  function esc(s){var d=document.createElement('div');d.textContent=s==null?'—':s;return d.innerHTML;}
-  function dzSection(title,icon,html){return '<div class="dz-sec"><h4>'+icon+' '+title+'</h4>'+html+'</div>';}
-  document.querySelectorAll('#recentTbl tr[data-sid]').forEach(function(tr){
-    tr.addEventListener('click',function(){
-      var sid=tr.dataset.sid;
-      var body=document.getElementById('drawerBody');
-      body.innerHTML='<div class="drawer-loading">加载中…</div>';
-      openDrawer();
-      fetch('/api/student_profile/'+sid).then(function(r){return r.json();}).then(function(d){
-        if(!d.ok){body.innerHTML='<div class="drawer-loading">档案加载失败</div>';return;}
-        var s=d.student;
-        var av = s.avatar.indexOf('/')===0 ? '<img class="dz-av-img" src="'+esc(s.avatar)+'">' : '<span>'+esc(s.avatar)+'</span>';
-        var html='<div class="dz-profile">'+
-          '<div class="dz-av">'+av+'</div>'+
-          '<div><h3>'+esc(s.name)+'</h3><p>'+esc(s.education_level)+' · '+esc(s.college)+'</p></div>'+
-          '</div>';
-        html+=dzSection('基本信息','👤',
-          '<table class="dz-tbl">'+
-          '<tr><td>性别</td><td>'+esc(s.gender)+'</td><td>手机号</td><td>'+esc(s.phone)+'</td></tr>'+
-          '<tr><td>学号</td><td colspan="3">'+esc(s.student_id)+'</td></tr>'+
-          '<tr><td>院校</td><td colspan="3">'+esc(s.school)+'</td></tr>'+
-          '<tr><td>专业</td><td>'+esc(s.major)+'</td><td>班级</td><td>'+esc(s.class_name)+'</td></tr>'+
-          '<tr><td>年级</td><td>'+esc(s.grade)+'</td><td>学籍状态</td><td>'+esc(s.student_status)+'</td></tr>'+
-          '</table>');
-        var appth='';
-        d.appointments.forEach(function(a){
-          appth+='<tr><td>'+esc(a.date)+'<br><small>'+esc(a.time)+'</small></td><td>'+esc(a.counselor)+'</td><td>'+esc(a.topic)+'</td><td><span class="dz-st">'+esc(a.status)+'</span></td></tr>';
-        });
-        html+=dzSection('心理咨询预约记录（'+d.appointments.length+'）','📅',
-          '<table class="dz-tbl dz-list"><tr><th>时间</th><th>咨询师</th><th>主题</th><th>状态</th></tr>'+(appth||'<tr><td colspan="4" class="dz-empty">暂无预约记录</td></tr>')+'</table>');
-        var ash='';
-        d.assessments.forEach(function(a){
-          ash+='<tr><td>'+esc(a.name)+'</td><td>'+esc(a.score)+'</td><td>'+esc(a.level)+'</td><td>'+esc(a.time)+'</td></tr>';
-        });
-        html+=dzSection('心理测评记录（'+d.assessments.length+'）','📊',
-          '<table class="dz-tbl dz-list"><tr><th>量表</th><th>得分</th><th>结果</th><th>时间</th></tr>'+(ash||'<tr><td colspan="4" class="dz-empty">暂无测评记录</td></tr>')+'</table>');
-        var alh='';
-        d.alerts.forEach(function(a){
-          alh+='<div class="dz-alert '+(a.level==='高'?'hi':'')+'"><div><b>['+esc(a.source)+'] '+esc(a.level)+'风险 · '+esc(a.status)+'</b><p>'+esc(a.content)+'</p>'+(a.note?'<small>处理备注：'+esc(a.note)+'</small>':'')+'</div><span class="dz-alert-time">'+esc(a.time)+'</span></div>';
-        });
-        html+=dzSection('预警与跟进记录（'+d.alerts.length+'）','⚠️',
-          alh||'<div class="dz-empty">暂无预警记录</div>');
-        var trh='';
-        d.trees.forEach(function(t){
-          trh+='<div class="dz-tree">'+(t.flag?'<span class="dz-flag">危机</span>':'')+'<b>'+esc(t.title)+'</b><small>'+esc(t.time)+'</small></div>';
-        });
-        html+=dzSection('近期树洞动态（'+d.trees.length+'）','🌳',
-          trh||'<div class="dz-empty">暂无树洞动态</div>');
-        body.innerHTML=html;
-      }).catch(function(){body.innerHTML='<div class="drawer-loading">档案加载失败</div>';});
+  /* —— 学生维度卡片网格 —— */
+  var sg=document.getElementById('studentGrid');
+  var cardsHtml='';
+  (d.students||[]).forEach(function(st){
+    var oc = st.ocolor==='red'?'tag-red':(st.ocolor==='orange'?'tag-orange':'tag-green');
+    // 专业量表摘要（最多2条）
+    var nh='';
+    st.normal.slice(0,2).forEach(function(n){
+      var rc=n.risk==null?'':(' · 风险'+n.risk);
+      nh+='<div class="sg-line"><span>'+esc(n.scale)+'</span><b>'+n.score+'分'+rc+'</b></div>';
     });
+    // IRT 摘要（最多2条）
+    var ih='';
+    st.irt.slice(0,2).forEach(function(t){
+      ih+='<div class="sg-line sg-irt"><span>'+esc(t.scale)+'</span><b>T'+t.t_score+' · θ'+(t.theta>=0?'+':'')+t.theta+' · '+t.n_items+'题</b></div>';
+    });
+    cardsHtml+='<div class="sg-card" data-sid="'+st.sid+'">'+
+      '<div class="sg-head"><span class="sg-av">'+esc(st.avatar)+'</span>'+
+      '<div class="sg-who"><b>'+esc(st.name)+'</b><small>'+esc(st.grade)+' · '+esc(st.major)+'</small></div>'+
+      '<span class="tag '+oc+'">'+esc(st.overall)+'</span></div>'+
+      '<div class="sg-body">'+
+        '<div class="sg-group"><div class="sg-gl">专业量表 '+st.n_normal+'</div>'+(nh||'<div class="sg-none">暂无</div>')+'</div>'+
+        '<div class="sg-group"><div class="sg-gl sg-gl-irt">IRT自适应 '+st.n_irt+'</div>'+(ih||'<div class="sg-none">暂无</div>')+'</div>'+
+      '</div>'+
+      '<div class="sg-foot">点击查看完整心理档案 →</div>'+
+    '</div>';
+  });
+  sg.innerHTML=cardsHtml||'<p style="color:#adb5bd">暂无学生</p>';
+  sg.querySelectorAll('.sg-card').forEach(function(c){
+    c.addEventListener('click',function(){ openProfile(c.dataset.sid); });
   });
 });
 </script>
@@ -240,6 +264,25 @@ fetch('/api/dash/overview').then(function(r){return r.json();}).then(function(d)
 })();
 </script>
 <style>
+/* 学生维度卡片网格 */
+#studentGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.sg-card{background:#fff;border:1px solid #e9edf3;border-radius:14px;padding:14px 16px;cursor:pointer;transition:.16s;box-shadow:0 2px 8px rgba(28,109,217,.05);display:flex;flex-direction:column}
+.sg-card:hover{box-shadow:0 10px 24px rgba(28,109,217,.13);transform:translateY(-2px);border-color:#c5ddff}
+.sg-head{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.sg-av{width:40px;height:40px;border-radius:50%;background:#eef4ff;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;overflow:hidden}
+.sg-who{flex:1;min-width:0}
+.sg-who b{font-size:14.5px;color:#233;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg-who small{font-size:11.5px;color:#94a3b8;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg-body{display:flex;flex-direction:column;gap:8px;flex:1}
+.sg-group{background:#f8fafd;border-radius:9px;padding:8px 10px}
+.sg-gl{font-size:11px;font-weight:700;color:#1c6dd9;margin-bottom:5px}
+.sg-gl-irt{color:#7048e8}
+.sg-line{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:2px 0}
+.sg-line span{color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg-line b{color:#334155;white-space:nowrap;font-weight:600}
+.sg-line.sg-irt b{color:#5f3dc4}
+.sg-none{font-size:11.5px;color:#b6c0cc}
+.sg-foot{margin-top:10px;padding-top:9px;border-top:1px solid #f0f3f8;font-size:11.5px;color:#1c6dd9;font-weight:600}
 .hr-item{background:#f8f9fa;border-radius:12px;padding:10px 12px;margin-bottom:10px;border:1px solid #eef2f7}
 .hr-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
 .hr-av{font-size:22px}
@@ -251,10 +294,10 @@ fetch('/api/dash/overview').then(function(r){return r.json();}).then(function(d)
 #recentTbl tr{cursor:pointer}
 #recentTbl tr:hover{background:#f0f7ff}
 /* 学生档案抽屉 */
-.drawer-mask{position:fixed;inset:0;background:rgba(20,40,70,.4);opacity:0;visibility:hidden;transition:.25s;z-index:90}
-.drawer-mask.show{opacity:1;visibility:visible}
-.drawer{position:fixed;top:0;right:-420px;width:400px;max-width:92vw;height:100%;background:#fff;box-shadow:-8px 0 30px rgba(20,40,70,.18);transition:right .28s ease;z-index:91;display:flex;flex-direction:column}
-.drawer.open{right:0}
+.drawer-mask{display:none;position:fixed;inset:0;background:rgba(20,40,70,.45);z-index:90}
+.drawer-mask.show{display:block}
+.drawer{display:none;position:fixed;top:0;right:0;width:min(560px,94vw);height:100%;background:#fff;box-shadow:-8px 0 30px rgba(20,40,70,.18);z-index:91;flex-direction:column}
+.drawer.open{display:flex}
 .drawer-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #eef2f7;background:linear-gradient(120deg,#1c6dd9,#15aabf);color:#fff}
 .drawer-head h3{margin:0;font-size:16px}
 .drawer-close{cursor:pointer;font-size:18px;opacity:.9;padding:2px 8px;border-radius:8px}

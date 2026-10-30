@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}我的测评 · 心隅{% endblock %}
+{% block body %}
+<div class="hero-banner">
+  <h1>📂 我的测评</h1>
+  <p>全部心理测评历史：专业量表 {{ n_normal }} 次 · IRT 自适应 {{ n_irt }} 次，共 {{ rows|length }} 条记录。</p>
+</div>
+
+<div class="card">
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <a class="btn" href="{{ url_for('assessments') }}">📋 去做专业量表</a>
+    <a class="btn" style="background:#5f3dc4;color:#fff" href="{{ url_for('irt_home') }}">🎯 去做 IRT 自适应测评</a>
+  </div>
+
+  {% if rows %}
+  <table class="tbl" style="width:100%;border-collapse:collapse;font-size:14px">
+    <tr style="background:#f8f9fa">
+      <th style="padding:10px;text-align:left">类型</th>
+      <th style="padding:10px;text-align:left">量表</th>
+      <th style="padding:10px;text-align:left">时间</th>
+      <th style="padding:10px;text-align:left">得分</th>
+      <th style="padding:10px;text-align:left">结果</th>
+      <th style="padding:10px;text-align:left">说明</th>
+      <th style="padding:10px;text-align:left">操作</th>
+    </tr>
+    {% for r in rows %}
+    <tr style="border-bottom:1px solid #eef2f7">
+      <td style="padding:10px">
+        {% if r.kind == 'irt' %}
+        <span class="tag" style="background:#f3f0ff;color:#5f3dc4">IRT自适应</span>
+        {% else %}
+        <span class="tag tag-blue">专业量表</span>
+        {% endif %}
+      </td>
+      <td style="padding:10px;font-weight:600">{{ r.name }}</td>
+      <td style="padding:10px;color:#868e96;white-space:nowrap">{{ r.time.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td style="padding:10px">{{ r.score_text }}</td>
+      <td style="padding:10px">
+        {% if '重' in r.level or '危险' in r.level %}
+        <span class="tag tag-red">{{ r.level }}</span>
+        {% elif '中' in r.level %}
+        <span class="tag tag-orange">{{ r.level }}</span>
+        {% elif '轻' in r.level %}
+        <span class="tag" style="background:#fff9db;color:#e8a20d">{{ r.level }}</span>
+        {% else %}
+        <span class="tag" style="background:#ebfbee;color:#2b8a3e">{{ r.level }}</span>
+        {% endif %}
+      </td>
+      <td style="padding:10px;color:#868e96;font-size:12.5px">{{ r.detail }}</td>
+      <td style="padding:10px;white-space:nowrap"><a href="{{ r.url }}">查看 →</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div style="text-align:center;color:#adb5bd;padding:50px 20px">
+    <div style="font-size:40px;margin-bottom:10px">📭</div>
+    <p>还没有任何测评记录</p>
+    <a class="btn" href="{{ url_for('assessments') }}">立即做一次测评 →</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

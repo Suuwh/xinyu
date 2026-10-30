@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}预约管理 · 心屿{% endblock %}
+{% block title %}预约管理 · 心隅{% endblock %}
 {% block body %}
 <div class="mb-page">
   <div class="page-head">
@@ -47,8 +47,10 @@
       </div>
       {% if r.status in ['pending','confirmed'] %}
       <div class="mb-row-actions" onclick="event.stopPropagation()">
-        <a class="btn btn-sm btn-sky" href="{{ url_for('manage_booking_action', aid=r.id, action='confirmed') }}">确认</a>
-        <a class="btn btn-sm btn-mint" href="{{ url_for('manage_booking_action', aid=r.id, action='done') }}">完成</a>
+        <button type="button" class="btn btn-sm btn-sky mb-act" data-aid="{{ r.id }}" data-action="confirmed"
+                data-stu="{{ st.real_name or st.username }}" data-time="{{ r.date }} {{ r.time_slot }}">确认</button>
+        <button type="button" class="btn btn-sm btn-mint mb-act" data-aid="{{ r.id }}" data-action="done"
+                data-stu="{{ st.real_name or st.username }}" data-time="{{ r.date }} {{ r.time_slot }}">完成</button>
         <button type="button" class="btn btn-sm btn-ghost mb-cancel" data-aid="{{ r.id }}"
                 data-stu="{{ st.real_name or st.username }}" data-time="{{ r.date }} {{ r.time_slot }}">取消</button>
       </div>
@@ -71,16 +73,16 @@
   </div>
 </aside>
 
-<!-- 取消预约确认弹窗 -->
+<!-- 预约操作确认弹窗（确认 / 完成 / 取消） -->
 <div class="confirm-mask" id="cfmMask"></div>
 <div class="confirm-box" id="cfmBox" role="dialog" aria-modal="true">
-  <div class="cfm-icon">⚠️</div>
-  <h3>确认取消这条预约？</h3>
+  <div class="cfm-icon" id="cfmIcon">⚠️</div>
+  <h3 id="cfmTitle">确认取消这条预约？</h3>
   <p id="cfmDesc">取消后该预约将被标记为「已取消」，学生端会同步看到取消状态。此操作不可直接撤销，请谨慎确认。</p>
   <div class="cfm-actions">
     <button type="button" class="btn btn-ghost" id="cfmNo">再想想</button>
     <form method="post" id="cfmForm" action="">
-      <button type="submit" class="btn btn-danger">确认取消预约</button>
+      <button type="submit" class="btn btn-danger" id="cfmOkBtn">确认取消预约</button>
     </form>
   </div>
 </div>
@@ -94,21 +96,41 @@ function closeDrawer(){drawer.classList.remove('open');mask.classList.remove('sh
 document.getElementById('drawerClose').onclick=closeDrawer;
 mask.onclick=closeDrawer;
 
-/* 取消预约确认弹窗 */
+/* 预约操作确认弹窗（确认 / 完成 / 取消） */
 const cfmMask=document.getElementById('cfmMask');
 const cfmBox=document.getElementById('cfmBox');
+const cfmIcon=document.getElementById('cfmIcon');
+const cfmTitle=document.getElementById('cfmTitle');
 const cfmDesc=document.getElementById('cfmDesc');
 const cfmForm=document.getElementById('cfmForm');
+const cfmOkBtn=document.getElementById('cfmOkBtn');
 function openCfm(){cfmMask.style.display='block';cfmBox.style.display='block';}
 function closeCfm(){cfmMask.style.display='none';cfmBox.style.display='none';}
 document.getElementById('cfmNo').onclick=closeCfm;
 cfmMask.onclick=closeCfm;
+const ACT_CONF={
+  confirmed:{icon:'✅',title:'确认接受这条预约？',btn:'确认接受预约',cls:'btn-sky',
+    desc:'确认后该预约将标记为「已确认」并进入待咨询安排，学生端会同步看到确认状态。请确认该时间与地点你可以正常接待。'},
+  done:{icon:'🎉',title:'将这条预约标记为已完成？',btn:'确认已完成',cls:'btn-mint',
+    desc:'请确认本次咨询确已结束。标记为「已完成」后将作为咨询记录归档，通常不再恢复。'},
+  cancelled:{icon:'⚠️',title:'确认取消这条预约？',btn:'确认取消预约',cls:'btn-danger',
+    desc:'取消后该预约将标记为「已取消」，学生端会同步看到取消状态。此操作不可直接撤销，请谨慎确认。'}
+};
+function openAction(btn, act){
+  const cfg=ACT_CONF[act]; if(!cfg) return;
+  cfmIcon.textContent=cfg.icon;
+  cfmTitle.textContent=cfg.title;
+  cfmOkBtn.textContent=cfg.btn;
+  cfmOkBtn.className='btn '+cfg.cls;
+  cfmForm.action='/manage_booking/'+btn.dataset.aid+'/'+act;
+  cfmDesc.textContent='学生「'+btn.dataset.stu+'」的预约（'+btn.dataset.time+'）。'+cfg.desc;
+  openCfm();
+}
+document.querySelectorAll('.mb-act').forEach(btn=>{
+  btn.addEventListener('click',()=>openAction(btn, btn.dataset.action));
+});
 document.querySelectorAll('.mb-cancel').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    cfmForm.action='/manage_booking/'+btn.dataset.aid+'/cancelled';
-    cfmDesc.textContent='取消「'+btn.dataset.stu+'」的预约（'+btn.dataset.time+'）后，该预约将标记为已取消，学生端会同步看到。此操作不可直接撤销，请确认。';
-    openCfm();
-  });
+  btn.addEventListener('click',()=>openAction(btn,'cancelled'));
 });
 
 function esc(s){const d=document.createElement('div');d.textContent=s==null?'—':s;return d.innerHTML;}

@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}心屿 · 阳光心理健康平台{% endblock %}</title>
+<title>{% block title %}心隅 · 阳光心理健康平台{% endblock %}</title>
 <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 {% block head %}{% endblock %}
 </head>
 <body>
 <nav class="topnav">
   <div class="nav-inner">
-    <a class="brand" href="{{ url_for('index') }}">🌊 心屿</a>
+    <a class="brand" href="{{ url_for('index') }}">🌊 心隅</a>
     <div class="nav-links">
       {% if u %}
         {% if u.role == 'student' %}
@@ -22,6 +22,7 @@
           <a href="{{ url_for('booking') }}">预约咨询</a>
           <a href="{{ url_for('learn') }}">心理成长</a>
           <a href="{{ url_for('chat') }}">AI倾诉</a>
+          <a href="{{ url_for('rag_chat_page') }}" title="私密心聊：端侧离线·数据不出本机的一对一私人AI心理咨询">私密心聊</a>
         {% else %}
           <a href="{{ url_for('teacher_home') }}">首页</a>
           <a href="{{ url_for('dash') }}">数据看板</a>
@@ -52,6 +53,6 @@
 
 <main class="container">{% block body %}{% endblock %}</main>
 
-<footer class="footer">心屿 · AI校园心理健康平台 | 教学竞赛演示，不能替代专业医疗诊断 · 24h危机热线 400-161-9995</footer>
+<footer class="footer">心隅 · AI校园心理健康平台 · 本平台结果不能替代专业医疗诊断 · 24h危机热线 400-161-9995</footer>
 </body>
 </html>

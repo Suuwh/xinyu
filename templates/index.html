@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}首页 · 心屿{% endblock %}
+{% block title %}首页 · 心隅{% endblock %}
 {% block body %}
 <div class="hero-banner">
   <h1>你好，{{ u.real_name or u.username }} {{ u.avatar or '🌻' }}</h1>
@@ -30,13 +30,27 @@
 
 <div class="card">
   <h3>📌 我的最近状态</h3>
-  {% if latest %}
-  <p style="margin-top:8px">
-    最近一次测评 <b>{{ latest.created_at.strftime('%m-%d') }}</b>
-    <span class="tag">{{ latest.scale_code|upper }}</span>
-    结果 <b>{{ latest.level }}</b>（{{ latest.score }}分）
-    &nbsp;<a href="{{ url_for('history') }}">查看历史 →</a>
-  </p>
+  {% if latest or latest_irt %}
+  <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+    {% if latest %}
+    <p style="margin:0">
+      <span class="tag tag-blue">专业量表</span>
+      最近测评 <b>{{ latest.created_at.strftime('%m-%d') }}</b>
+      <span class="tag">{{ latest.scale_code|upper }}</span>
+      结果 <b>{{ latest.level }}</b>（{{ latest.score }}分）
+    </p>
+    {% endif %}
+    {% if latest_irt %}
+    <p style="margin:0">
+      <span class="tag" style="background:#f3f0ff;color:#5f3dc4">IRT自适应</span>
+      最近测评 <b>{{ latest_irt.created_at.strftime('%m-%d') }}</b>
+      <span class="tag">{{ latest_irt.scale_code|upper }}</span>
+      结果 <b>{{ latest_irt.level }}</b>（T{{ latest_irt.t_score }}分 · θ{{ '%+.2f'|format(latest_irt.theta) }} · {{ latest_irt.n_items }}题）
+      &nbsp;<a href="{{ url_for('irt_result', tid=latest_irt.id) }}">查看报告 →</a>
+    </p>
+    {% endif %}
+    <p style="margin:4px 0 0"><a href="{{ url_for('my_assessments') }}">查看我的全部测评 →</a></p>
+  </div>
   {% else %}
   <p style="color:#868e96;margin-top:8px">还没有测评记录，<a href="{{ url_for('assessments') }}">做一次专业自评 →</a></p>
   {% endif %}

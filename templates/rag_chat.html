@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}私人AI心理咨询 · 心隅{% endblock %}
+{% block body %}
+<div style="display:flex;gap:14px;max-width:1080px;margin:14px auto;height:calc(100vh - 110px)">
+
+  <!-- 左侧：历史会话 -->
+  <div class="card" style="width:230px;flex-shrink:0;display:flex;flex-direction:column;padding:12px;overflow:hidden">
+    <a href="{{ url_for('rag_chat_page') }}" class="btn" style="width:100%;margin-bottom:10px;background:#5f3dc4;color:#fff">＋ 新建对话</a>
+    <div style="font-size:12px;color:#adb5bd;padding:0 4px 6px;display:flex;justify-content:space-between;align-items:center"><span>历史对话</span><span style="color:#9775fa;cursor:help" title="在某条对话上点击鼠标右键即可删除">右键删除</span></div>
+    <div id="sessionList" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
+      {% for s in sessions %}
+      <a href="{{ url_for('rag_chat_page', sid=s.id) }}"
+         class="rag-sess {% if cur and cur.id==s.id %}active{% endif %}"
+         data-sid="{{ s.id }}">
+        <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💬 {{ s.title }}</div>
+        <div style="font-size:11px;color:#adb5bd;margin-top:2px">{{ s.last_at.strftime('%m-%d %H:%M') }}</div>
+      </a>
+      {% else %}
+      <div style="font-size:12px;color:#ced4da;text-align:center;padding:20px 4px">暂无历史对话</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 右侧：对话主区 -->
+  <div class="card" style="flex:1;display:flex;flex-direction:column;padding:16px;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid #eef2f7">
+      <div>
+        <h2 style="margin:0;font-size:18px">🧠 私人AI心理咨询</h2>
+        <p style="margin:4px 0 0;font-size:12px;color:#868e96">
+          🔒 全程私密 · 对话仅保存在本机、不上传云端 · 只做陪伴倾听，不做疾病诊断
+        </p>
+      </div>
+      <span id="ragStatus" class="tag {{ 'tag-blue' if rag_status.ready else 'tag-orange' }}">
+        {{ '🟢 模型已就绪' if rag_status.ready else '🟡 模型加载中…' }}
+      </span>
+    </div>
+
+    <div style="background:#f8f9fa;padding:8px 12px;border-radius:10px;margin:10px 0;font-size:12px;color:#868e96;line-height:1.5">
+      💡 本地 CPU 推理，每次回复约需 <b>10–30 秒</b>，请耐心等待，不要重复点击发送。
+      出现自伤/伤人念头时会立刻引导你联系 24h 热线 <b>400-161-9995</b>。
+    </div>
+
+    <!-- 消息流 -->
+    <div id="msgBox" style="flex:1;overflow-y:auto;padding:10px 4px;display:flex;flex-direction:column;gap:12px">
+      {% if not msgs %}
+      <div style="text-align:center;color:#adb5bd;font-size:12.5px;padding:10px">— 开始一段新的对话 —</div>
+      {% endif %}
+      {% for m in msgs -%}
+      {% if m.role=='assistant' -%}
+      <div class="bubble assistant{% if m.crisis %} crisis{% endif %}"><span class="md-raw">{{ m.content }}</span>{% if m.sources %}<span class="meta">📚 参考：{{ m.sources }}</span>{% endif %}</div>
+      {%- else -%}
+      <div class="bubble user{% if m.crisis %} crisis{% endif %}">{{ m.content }}</div>
+      {%- endif %}
+      {% endfor %}
+    </div>
+
+    <!-- 输入区 -->
+    <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid #eef2f7">
+      <textarea id="msgInput" rows="2" placeholder="说说你现在的感受…（回车发送，Shift+回车换行）"
+        style="flex:1;padding:10px 12px;border:1.5px solid #dee2e6;border-radius:10px;font-size:14px;resize:none;font-family:inherit"></textarea>
+      <button id="sendBtn" class="btn" style="align-self:stretch;background:#5f3dc4;color:#fff;min-width:80px">发送</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除对话确认弹窗 -->
+<div class="rag-mask" id="ragDelMask"></div>
+<div class="rag-delbox" id="ragDelBox" role="dialog" aria-modal="true">
+  <div class="rag-del-icon">🗑️</div>
+  <h3>删除这段对话？</h3>
+  <p id="ragDelDesc">删除后，该对话及其全部消息将无法恢复。</p>
+  <div class="rag-del-actions">
+    <button type="button" class="btn btn-ghost" id="ragDelNo">取消</button>
+    <button type="button" class="btn btn-danger" id="ragDelYes">确认删除</button>
+  </div>
+</div>
+
+<style>
+.rag-sess{display:block;padding:8px 10px;border-radius:8px;text-decoration:none;color:#495057;transition:.15s}
+.rag-sess:hover{background:#f1f3f5}
+.rag-sess.active{background:#f3f0ff;color:#5f3dc4;font-weight:600}
+.bubble{max-width:80%;padding:10px 14px;border-radius:14px;line-height:1.65;font-size:14px;white-space:pre-wrap}
+.bubble.user{align-self:flex-end;background:#4dabf7;color:#fff;border-bottom-right-radius:4px}
+.bubble.assistant{align-self:flex-start;background:#f1f3f5;color:#212529;border-bottom-left-radius:4px;white-space:normal}
+.bubble.assistant ol,.bubble.assistant ul{margin:6px 0;padding-left:22px}
+.bubble.assistant li{margin:3px 0}
+.bubble.assistant b{color:#1c3d6e}
+.bubble.assistant code{background:#e9ecef;padding:1px 5px;border-radius:5px;font-size:12.5px}
+.bubble.crisis{background:#ffe3e3;border:2px solid #c92a2a;color:#c92a2a}
+.bubble .meta{display:block;margin-top:6px;font-size:11px;opacity:.75}
+.typing{align-self:flex-start;color:#5f3dc4;font-size:13px;padding:8px 12px;font-style:italic}
+.typing .dots::after{content:'';animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:''}25%{content:'·'}50%{content:'··'}75%{content:'···'}}
+/* 删除对话确认弹窗 */
+.rag-mask{position:fixed;inset:0;background:rgba(20,40,70,.45);display:none;z-index:1200}
+.rag-delbox{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);width:min(380px,92vw);background:#fff;border-radius:18px;padding:26px 24px 22px;display:none;z-index:1300;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.rag-del-icon{font-size:32px;margin-bottom:6px}
+.rag-delbox h3{font-size:16.5px;color:#343a40;margin:0 0 10px}
+.rag-delbox p{font-size:13px;color:#868e96;line-height:1.7;margin:0 0 20px;text-align:left}
+.rag-del-actions{display:flex;gap:10px;justify-content:center}
+.rag-del-actions .btn{padding:9px 20px}
+</style>
+
+<script>
+var box = document.getElementById('msgBox');
+var input = document.getElementById('msgInput');
+var sendBtn = document.getElementById('sendBtn');
+var curSid = {{ cur.id if cur else 'null' }};
+var busy = false;
+
+box.scrollTop = box.scrollHeight;
+
+function escHtml(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+function md2html(txt){
+  var s = escHtml(txt);
+  s = s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  s = s.replace(/`([^`]+?)`/g,'<code>$1</code>');
+  var lines = s.split(/\n/), out=[], inList=false, lt='';
+  function closeList(){ if(inList){ out.push('</'+lt+'>'); inList=false; lt=''; } }
+  for (var i=0;i<lines.length;i++){
+    var raw=lines[i], ln=raw.trim();
+    var om=ln.match(/^\d+\.\s+(.*)/);
+    var um=ln.match(/^[-*]\s+(.*)/);
+    if(om||um){
+      var type=om?'ol':'ul', body=om?om[1]:um[1];
+      if(!inList||lt!==type){ closeList(); out.push('<'+type+'>'); inList=true; lt=type; }
+      out.push('<li>'+body+'</li>');
+    } else if(ln===''){
+      // 空行不立即结束列表：若后面仍是同组列表项则保持连续编号
+      continue;
+    } else {
+      if(inList){
+        var isCont = /^[（(]/.test(ln) || (ln.length<36 && !/[。？！.?：:；;]$/.test(ln));
+        if(isCont){
+          var k=out.length-1;
+          while(k>=0 && out[k].indexOf('</li>')<0) k--;
+          if(k>=0){ out[k]=out[k].replace('</li>','<br><span style="opacity:.85">'+ln+'</span></li>'); continue; }
+        }
+        closeList();
+      }
+      out.push(ln);
+    }
+  }
+  closeList();
+  s = out.join('\n');
+  s = s.replace(/<(ol|ul)>\n/g,'<$1>').replace(/\n<\/(ol|ul)>/g,'</$1>');
+  s = s.replace(/<\/li>\n<li>/g,'</li><li>');
+  s = s.replace(/\n/g,'<br>');
+  s = s.replace(/<(ol|ul)><br>/g,'<$1>').replace(/<br><\/(ol|ul)>/g,'</$1>');
+  return s;
+}
+function addBubble(text, who, crisis, sources) {
+  // 移除"开始新对话"提示
+  var tip = box.querySelector('div[style*="开始一段新的对话"]');
+  if (tip) tip.remove();
+  var div = document.createElement('div');
+  div.className = 'bubble ' + who + (crisis ? ' crisis' : '');
+  if (who === 'assistant') { div.innerHTML = md2html(text); }
+  else { div.textContent = text; }
+  if (sources) {
+    var meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = '📚 参考：' + sources;
+    div.appendChild(meta);
+  }
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+/* 历史 AI 消息：markdown 渲染 */
+Array.prototype.forEach.call(document.querySelectorAll('.bubble.assistant .md-raw'), function(el){
+  el.outerHTML = md2html(el.textContent);
+});
+
+function send() {
+  if (busy) return;
+  var text = input.value.trim();
+  if (!text) return;
+  // 立即清空输入框并禁用
+  input.value = '';
+  busy = true;
+  sendBtn.disabled = true;
+  sendBtn.textContent = '思考中';
+  addBubble(text, 'user');
+
+  var typing = document.createElement('div');
+  typing.className = 'typing';
+  typing.innerHTML = 'AI 正在结合本地知识库思考<span class="dots"></span>（约 10–30 秒）';
+  box.appendChild(typing);
+  box.scrollTop = box.scrollHeight;
+
+  fetch('/api/rag/chat', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({message: text, sid: curSid})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    typing.remove();
+    busy = false;
+    sendBtn.disabled = false;
+    sendBtn.textContent = '发送';
+    if (!d.ok) {
+      if (d.not_ready) {
+        input.value = text;
+        addBubble('模型还在后台加载（首次约需 1–3 分钟），你的话已帮你放回输入框，稍后直接点发送即可，不用重新输入～', 'assistant');
+      } else {
+        addBubble('出错了：' + (d.error || '未知错误') + '，请稍后重试。', 'assistant');
+      }
+      return;
+    }
+    curSid = d.sid;
+    addBubble(d.reply, 'assistant', d.crisis, (d.sources||[]).join('、'));
+    var rs=document.getElementById('ragStatus');
+    if(rs){rs.className='tag tag-blue';rs.textContent='🟢 模型已就绪';}
+    // 新会话则刷新左侧列表（简单方式：重载页面到该会话）
+    if ({{ 'true' if not cur else 'false' }}) {
+      history.replaceState(null, '', '/rag_chat?sid=' + d.sid);
+      setTimeout(function(){ location.reload(); }, 800);
+    }
+  }).catch(function(e) {
+    typing.remove();
+    busy = false;
+    sendBtn.disabled = false;
+    sendBtn.textContent = '发送';
+    addBubble('网络错误或等待超时：' + e + '。本地模型首次响应较慢，请再试一次。', 'assistant');
+  });
+}
+
+sendBtn.onclick = send;
+input.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+
+// 历史对话：右键删除（自定义菜单 + 二次确认）
+var ctxMenu = document.createElement('div');
+ctxMenu.id = 'ragCtxMenu';
+ctxMenu.style.cssText = 'position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #dee2e6;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;min-width:140px';
+ctxMenu.innerHTML = '<div class="ctx-item" style="padding:8px 12px;border-radius:7px;font-size:13px;color:#c92a2a;cursor:pointer;display:flex;align-items:center;gap:7px">🗑️ 删除此对话</div>';
+document.body.appendChild(ctxMenu);
+var ctxItem = ctxMenu.querySelector('.ctx-item');
+ctxItem.addEventListener('mouseenter', function(){ ctxItem.style.background = '#fff5f5'; });
+ctxItem.addEventListener('mouseleave', function(){ ctxItem.style.background = ''; });
+var ctxSid = null;
+function hideCtx(){ ctxMenu.style.display = 'none'; ctxSid = null; }
+Array.prototype.forEach.call(document.querySelectorAll('#sessionList .rag-sess'), function(el){
+  el.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+    ctxSid = el.getAttribute('data-sid');
+    ctxMenu.style.display = 'block';
+    ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
+    ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 60) + 'px';
+  });
+});
+var delMask=document.getElementById('ragDelMask');
+var delBox=document.getElementById('ragDelBox');
+var delDesc=document.getElementById('ragDelDesc');
+var pendingSid=null;
+function closeDel(){ delMask.style.display='none'; delBox.style.display='none'; pendingSid=null; }
+ctxItem.addEventListener('click', function(){
+  var sid=ctxSid; hideCtx();
+  if(!sid) return;
+  var a=document.querySelector('#sessionList .rag-sess[data-sid="'+sid+'"]');
+  var title='该对话';
+  if(a && a.querySelector('div')){ title=(a.querySelector('div').textContent||'该对话').replace(/^\s*💬\s*/,''); }
+  pendingSid=sid;
+  delDesc.textContent='删除后，「'+title+'」及其全部消息将无法恢复。';
+  delMask.style.display='block'; delBox.style.display='block';
+});
+document.getElementById('ragDelNo').addEventListener('click', closeDel);
+delMask.addEventListener('click', closeDel);
+document.getElementById('ragDelYes').addEventListener('click', function(){
+  var sid=pendingSid; closeDel();
+  if(!sid) return;
+  fetch('/api/rag/session/'+sid+'/delete', {method:'POST'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok){ alert('删除失败，请稍后重试'); return; }
+      if(curSid==sid){ location.href='/rag_chat'; }
+      else{ var a=document.querySelector('#sessionList .rag-sess[data-sid="'+sid+'"]'); if(a) a.remove(); }
+    }).catch(function(){ alert('删除失败，请稍后重试'); });
+});
+document.addEventListener('click', hideCtx);
+document.addEventListener('scroll', hideCtx, true);
+window.addEventListener('resize', hideCtx);
+</script>
+{% endblock %}
