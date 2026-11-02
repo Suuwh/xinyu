@@ -1,9 +1,10 @@
 """
-心屿 · 资讯聚合模块
-- 实时抓取中国网心理频道（要闻/心理访谈/政策信息）
-- 实时抓取《心理月刊》最新目录
-- 内存缓存 30 分钟，抓取失败自动回退到内置精选内容（保证演示永远可用）
+资讯聚合模块:
+1、实时抓取中国网心理频道，包括要闻/心理访谈/政策信息；
+2、实时抓取《心理月刊》最新目录；
+3、内存缓存设置30分钟
 """
+
 import re
 import time
 import urllib.request
@@ -11,7 +12,7 @@ from datetime import datetime
 from html import unescape
 
 CACHE = {}
-CACHE_TTL = 1800  # 30 分钟
+CACHE_TTL = 1800  #设置缓存时间30分钟
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 
@@ -24,6 +25,7 @@ def _get(url, timeout=6):
             return raw.decode(enc)
         except Exception:
             continue
+
     return raw.decode("utf-8", errors="ignore")
 
 
@@ -33,15 +35,16 @@ def _norm_date(d):
     return d.replace("年", "-").replace("月", "-").replace("日", "").replace("/", "-").replace(".", "-").strip()
 
 
+#抓取数据
 def _parse_links(html, base):
-    """从列表页抽取 标题+链接+日期。优先按 <li>…<a>标题</a>…<span>日期</span>…</li> 块解析。"""
     items = []
     blocks = re.findall(r"<li[^>]*>(.*?)</li>", html, flags=re.S | re.I)
     for blk in blocks:
         anchors = re.findall(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', blk, flags=re.S | re.I)
         if not anchors:
             continue
-        # 一条 li 可能含图片链接+标题链接，取文本最长的那个
+
+        #一条li可能含图片链接+标题链接，取文本最长的那个
         href, raw_title = max(anchors, key=lambda a: len(re.sub(r"<[^>]+>", "", a[1])))
         title = unescape(re.sub(r"<[^>]+>", "", raw_title)).strip()
         title = re.sub(r"\s+", "", title)
@@ -49,11 +52,12 @@ def _parse_links(html, base):
             continue
         dm = re.search(r"(20\d{2}[-/年.]\d{1,2}[-/月.]\d{1,2})", blk)
         date = _norm_date(dm.group(1)) if dm else ""
-        if not date:  # 治愈系等栏目日期在文章URL路径 /YYYY-MM/DD/ 中
+        if not date:  
             um = re.search(r"/(20\d{2})-(\d{1,2})/(\d{1,2})/content_", href)
             if um:
                 date = "%s-%02d-%02d" % (um.group(1), int(um.group(2)), int(um.group(3)))
-        # 只要文章内容页链接
+
+        #只要文章内容页链接
         if "content_" not in href and not date:
             continue
         if href.startswith("/"):
@@ -62,7 +66,7 @@ def _parse_links(html, base):
             href = base.rstrip("/") + "/" + href
         items.append({"title": title, "url": href, "date": date})
 
-    # 兜底：li 结构取不到时用通用匹配
+    #li结构取不到时用通用匹配
     if not items:
         pattern = re.compile(r'<a[^>]+href="([^"]+)"[^>]*>([^<]{8,60})</a>(.{0,120}?)', re.S)
         for m in pattern.finditer(html):
@@ -81,10 +85,11 @@ def _parse_links(html, base):
     for it in items:
         if it["title"] not in seen:
             seen.add(it["title"]); out.append(it)
+
     return out[:12]
 
 
-# ---- 内置回退内容（来自实际抓取的真实文章，2026-10） ----
+#回退内容设置
 FALLBACK_CHINA = {
     "要闻": [
         {"title": "守正创新 中国员工帮助计划二十年探索与展望", "url": "http://psy.china.com.cn/", "date": "2026-09-24"},
@@ -148,6 +153,7 @@ FALLBACK_JOURNAL = [
 ]
 
 
+
 def _cached(key, fetcher, fallback):
     now = time.time()
     if key in CACHE and now - CACHE[key][0] < CACHE_TTL:
@@ -160,32 +166,31 @@ def _cached(key, fetcher, fallback):
     except Exception:
         pass
     CACHE[key] = (now, fallback, False)
+
     return fallback
 
 
 CHINA_SECTIONS = {
-    "要闻": "http://psy.china.com.cn/node_1013423.htm",
-    "心理访谈": "http://psy.china.com.cn/node_1013426.htm",
+    "要闻": "http://psy.china.com.cn/node_1013423.htm","心理访谈": "http://psy.china.com.cn/node_1013426.htm",
     "政策信息": "http://psy.china.com.cn/node_1013428.htm",
 }
 
 
 def get_china(section):
     url = CHINA_SECTIONS.get(section, CHINA_SECTIONS["要闻"])
-
     def f():
         return _parse_links(_get(url), "http://psy.china.com.cn/")[:10]
+    
     return _cached("china_" + section, f, FALLBACK_CHINA.get(section, FALLBACK_CHINA["要闻"]))
 
 
+#抓取栏目多页列表
 def _china_paged(section, max_pages=4):
-    """抓取栏目多页列表（第1页 + 分页页），用于往期查看与全量搜索。"""
     base = CHINA_SECTIONS.get(section, CHINA_SECTIONS["要闻"])
     items = []
     for i in range(1, max_pages + 1):
         url = base
         if i > 1:
-            # 中国网列表分页形如 node_1013423_2.htm
             url = re.sub(r"node_(\d+)\.htm", r"node_\1_%d.htm" % i, base)
         try:
             pg = _parse_links(_get(url), "http://psy.china.com.cn/")
@@ -198,24 +203,22 @@ def _china_paged(section, max_pages=4):
         if not new:
             break
         items.extend(new)
-        if len(new) < 8:  # 列表页内容少，视为已到底
+        if len(new) < 8:  
             break
+
     return items[:40]
 
 
+#栏目往期内容
 def get_china_all(section):
-    """栏目往期全部（多页合并），失败回退到单页/内置精选。"""
     def f():
         items = _china_paged(section)
         return items or None
+    
     return _cached("china_all_" + section, f, FALLBACK_CHINA.get(section, FALLBACK_CHINA["要闻"]))
 
-
+#资讯搜索
 def search_china(q):
-    """资讯搜索：先在本地已抓取内容（多栏目多页 + 内置精选）中按标题匹配。
-
-    返回 (hits, found)。found=False 表示本地无命中，由页面引导到公网搜索。
-    """
     q = q.strip()
     if not q:
         return [], False
@@ -233,11 +236,12 @@ def search_china(q):
                 seen.add(it["title"])
                 hits.append({"title": it["title"], "url": it["url"], "date": it.get("date", ""),
                              "source": "中国网心理频道 · " + section + "（精选）"})
+                
     return hits[:30], bool(hits)
 
 
+#心理月刊搜索
 def search_journal(q):
-    """心理月刊搜索：本地已抓取/精选目录按标题匹配。"""
     q = q.strip()
     if not q:
         return [], False
@@ -259,12 +263,8 @@ def get_journal():
     return _cached("journal", f, FALLBACK_JOURNAL)
 
 
-# ---- 学生端：心理成长科普（心理百科 + 治愈系） ----
-LEARN_SOURCES = {
-    "心理百科": "http://psy.china.com.cn/node_1013431.htm",
-    "治愈系": "http://psy.china.com.cn/node_1013435.htm",
-}
-
+#学生端：心理成长科普
+LEARN_SOURCES = {"心理百科": "http://psy.china.com.cn/node_1013431.htm","治愈系": "http://psy.china.com.cn/node_1013435.htm",}
 FALLBACK_LEARN = [
     {"title": "总忍不住反复检查？认识强迫症与缓解方法", "date": "2026-09-22",
      "url": "http://psy.china.com.cn/", "source": "中国网心理频道 · 心理百科"},
@@ -280,7 +280,6 @@ FALLBACK_LEARN = [
      "url": "http://psy.china.com.cn/", "source": "中国网心理频道 · 治愈系"},
 ]
 
-
 def get_learn_articles():
     def f():
         out = []
@@ -289,29 +288,27 @@ def get_learn_articles():
                 out.append({"title": it["title"], "date": it["date"] or "近期",
                             "url": it["url"], "source": "中国网心理频道 · " + name})
         return out[:10] or None
+    
     return _cached("learn", f, FALLBACK_LEARN)
 
 
-# ---- 更新时间与在线状态 ----
+#更新时间与在线状态
 def last_updated(key):
-    """返回某栏目的缓存时间字符串；在线=True 表示本次为实时抓取，False 为内置回退。"""
     if key not in CACHE:
         return "尚未更新", False
     ts, online = CACHE[key][0], CACHE[key][2] if len(CACHE[key]) > 2 else True
+
     return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M"), online
 
 
-# ---- 站内文章正文抓取 ----
+#站内文章正文抓取
 def fetch_article(url):
-    """抓取文章正文，返回 {title, paragraphs, source}；失败返回 None。"""
     try:
         html = _get(url)
-        # 去脚本样式
         html = re.sub(r"<script.*?</script>", "", html, flags=re.S | re.I)
         html = re.sub(r"<style.*?</style>", "", html, flags=re.S | re.I)
         title_m = re.search(r"<title>([^<]+)</title>", html)
         title = unescape(title_m.group(1)).strip() if title_m else "文章"
-        # 取 <p> 段落
         paras = []
         for pm in re.finditer(r"<p[^>]*>(.*?)</p>", html, flags=re.S | re.I):
             txt = re.sub(r"<[^>]+>", "", pm.group(1))
@@ -323,3 +320,8 @@ def fetch_article(url):
         return {"title": title, "paragraphs": paras[:40], "source": url}
     except Exception:
         return None
+
+
+
+
+    
