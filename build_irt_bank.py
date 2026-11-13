@@ -1,23 +1,20 @@
-# -*- coding: utf-8 -*-
 """
 IRT自适应测评题库构建器
-生成data/irt_bank.json，包含SCL-90 / SAS / SDS三套量表。
+用于生成data/irt_bank.json，包含SCL-90/SAS/SDS三套量表。
 
 模型：Samejima等级响应模型GRM（适配李克特多级题）
 每题参数：a (区分度), thresholds (b1..b{k-1}), reverse (是否反向计分)
 
 参数标定说明：
-  SCL-90/SAS/SDS为广泛使用的公开量表，此处参数基于公开心理测量学
-  研究中的区分度/难度典型范围进行演示性标定。正式临床部署需用
-  大样本作答数据通过py-irt重新拟合。
+  SCL-90/SAS/SDS为广泛使用的公开量表，此处参数基于公开心理测量学研究中的区分度/难度典型范围进行演示性标定。正式临床部署需用大样本作答数据通过py-irt重新拟合。
 """
 import json, os, math
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "data", "irt_bank.json")
 
-# ---------------- SCL-90（90题，9因子，0-4五级） ----------------
+#SCL-90，90题，9因子，0-4五级
+#(题号, 因子, 题干)
 SCL90 = [
-    # (题号, 因子, 题干)
     (1, "躯体化", "头痛"),
     (2, "焦虑", "神经过敏，心中不踏实"),
     (3, "强迫", "头脑中有不必要的想法或字句盘旋"),
@@ -110,7 +107,7 @@ SCL90 = [
     (90, "精神病性", "感到自己有罪过"),
 ]
 
-# ---------------- SAS（20题，1-4四级） ----------------
+#SAS，20题，1-4四级
 SAS = [
     (1, False, "我觉得比平常容易紧张和着急"),
     (2, False, "我无缘无故地感到害怕"),
@@ -134,7 +131,7 @@ SAS = [
     (20, False, "我做恶梦"),
 ]
 
-# ---------------- SDS（20题，1-4四级） ----------------
+#SDS，20题，1-4四级
 SDS = [
     (1, False, "我觉得闷闷不乐，情绪低沉"),
     (2, True,  "我觉得一天中早晨最好"),
@@ -164,15 +161,15 @@ def _params(n_levels, item_idx, reverse=False):
     n_levels: 可选等级数（5或4）
     reverse: 反向题，阈值整体取反
     """
-    # 确定性伪随机（保证题库版本一致）
+    #确定性伪随机（保证题库版本一致）
     seed = (item_idx * 2654435761) % 2**31
     def rnd():
         nonlocal seed
         seed = (seed * 1103515245 + 12345) % 2**31
         return seed / 2**31
-    a = 0.9 + rnd() * 1.2                      # 区分度 0.9 ~ 2.1
+    a = 0.9 + rnd() * 1.2              #区分度0.9 ~ 2.1
     n_th = n_levels - 1
-    # 阈值在 [-1.6, 1.6] 之间等距基础上加抖动
+    #阈值在[-1.6, 1.6]之间等距基础上加抖动
     centers = [-1.5, -0.5, 0.5, 1.5][:n_th]
     thresholds = [round(c + (rnd() - 0.5) * 0.35, 3) for c in centers]
     thresholds.sort()
@@ -184,7 +181,7 @@ def _params(n_levels, item_idx, reverse=False):
 def build():
     bank = {"scales": {}}
 
-    # SCL-90
+    #SCL-90
     items = []
     for num, dim, stem in SCL90:
         a, th = _params(5, num, reverse=False)
@@ -203,7 +200,7 @@ def build():
         "description": "从 90 题中根据你的作答精准选题，通常 25-40 题完成，覆盖 9 大心理症状维度。",
     }
 
-    # SAS
+    #SAS
     items = []
     for num, rev, stem in SAS:
         a, th = _params(4, num + 100, reverse=rev)
@@ -222,7 +219,7 @@ def build():
         "description": "从 20 题中自适应选题，通常 13-20 题完成，精准估计你的焦虑水平。",
     }
 
-    # SDS
+    #SDS
     items = []
     for num, rev, stem in SDS:
         a, th = _params(4, num + 200, reverse=rev)
@@ -251,3 +248,5 @@ def build():
 
 if __name__ == "__main__":
     build()
+
+
