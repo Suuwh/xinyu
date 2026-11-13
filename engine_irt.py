@@ -115,7 +115,8 @@ def should_stop(theta: float, se: float, answered_count: int, max_items: int) ->
 
 
 def stop_reason(theta: float, se: float, answered_count: int, max_items: int) -> str | None:
-    #返回停止原因：se_reached（精度达标）/max_items（达到题数上限）/None（继续）
+    #返回停止原因：se_reached（精度达标）/max_items（达到题数上限，可能小于题库总量）/None（继续）
+    #注：题库无题可出的 bank_exhausted 由路由在 next_item 返回 None 时判定
     if answered_count >= max_items:
         return "se_reached" if se <= SE_STOP else "max_items"
     if se <= SE_STOP and answered_count >= MIN_ITEMS:
