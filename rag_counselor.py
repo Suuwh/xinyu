@@ -63,11 +63,14 @@ def init_rag(verbose=True):
         try:
             from sentence_transformers import SentenceTransformer
             from llama_cpp import Llama
+            import torch
 
             if verbose:
                 print("[RAG] 加载 BGE-M3 embedding ...")
             bge_source = str(BGE_DIR) if BGE_DIR.exists() else "BAAI/bge-m3"
-            embed = SentenceTransformer(bge_source, device="cpu")
+            #FP16 加载，CPU 下可将 BGE-M3 占用从约 2.2GB 降到约 1.1GB，避免多模型共存时提交内存耗尽
+            embed = SentenceTransformer(bge_source, device="cpu",
+                                        model_kwargs={"torch_dtype": torch.float16})
 
             chunks = _load_chunks()
             cache_file = VEC_CACHE / "kb_embeddings.pkl"
