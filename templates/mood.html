@@ -14,15 +14,25 @@
       <h3>今天，感觉怎么样？</h3>
       <form method="post" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
         <label class="f" style="margin:0">心情</label>
-        <select name="mood" style="width:auto">
-          <option value="5">😄 超棒</option>
-          <option value="3">🙂 不错</option>
-          <option value="1">😐 一般</option>
-          <option value="-1">🙁 有点低</option>
-          <option value="-3">😢 很难过</option>
-          <option value="-5">🌧 撑不住</option>
-        </select>
-        <input type="text" name="note" placeholder="今天发生了什么？（可写）" style="flex:1;min-width:160px">
+        <div class="mood-pick">
+          <span class="mood-icon" id="moodIcon">😄</span>
+          <input type="hidden" name="mood" id="moodValue" value="5">
+          <div class="mood-select" id="moodSelectWrap">
+            <button type="button" class="mood-btn" id="moodBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span id="moodBtnText">超棒</span>
+              <svg class="mood-caret" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="mood-menu" id="moodMenu" role="listbox">
+              <button type="button" class="mood-opt" role="option" data-val="5">超棒</button>
+              <button type="button" class="mood-opt" role="option" data-val="3">不错</button>
+              <button type="button" class="mood-opt" role="option" data-val="1">一般</button>
+              <button type="button" class="mood-opt" role="option" data-val="-1">有点低</button>
+              <button type="button" class="mood-opt" role="option" data-val="-3">很难过</button>
+              <button type="button" class="mood-opt" role="option" data-val="-5">撑不住</button>
+            </div>
+          </div>
+        </div>
+        <input type="text" name="note" placeholder="今天发生了什么？（可写）" style="flex:1;min-width:160px;margin-bottom:0;height:40px;min-height:40px">
         <button class="btn">记录</button>
       </form>
     </div>
@@ -38,7 +48,7 @@
         </div>
       </div>
       <div id="moodChart" style="width:100%;height:300px"></div>
-      <p style="font-size:12px;color:#adb5bd;margin-top:8px">曲线仅展示你亲手记录的心情值（-5 到 +5），用于观察自己的情绪起伏。</p>
+      <p style="font-size:12px;color:var(--color-muted);margin-top:8px">曲线仅展示你亲手记录的心情值（-5 到 +5），用于观察自己的情绪起伏。</p>
     </div>
 
     <div class="card">
@@ -47,7 +57,7 @@
         <span id="listTitle" class="mood-list-tip">全部日期</span>
       </div>
       <div id="diaryList"></div>
-      <p id="listEmpty" style="display:none;color:#adb5bd;text-align:center;padding:20px">这一天还没有记录。</p>
+      <p id="listEmpty" style="display:none;color:var(--color-muted);text-align:center;padding:20px">这一天还没有记录。</p>
     </div>
   </div>
 
@@ -61,7 +71,7 @@
         <button type="button" class="stab" data-smode="month">按月</button>
         <button type="button" class="stab" data-smode="year">按年</button>
       </div>
-      <p style="font-size:12px;color:#adb5bd;margin:6px 0 10px">点击分组，查看那段时间的心事</p>
+      <p style="font-size:12px;color:var(--color-muted);margin:6px 0 10px">点击分组，查看那段时间的心事</p>
       <div id="sideDates"></div>
     </div>
   </aside>
@@ -70,6 +80,41 @@
 <script>
 var EMOJIS = {5: '😄', 3: '🙂', 1: '😐', 0: '😐', '-1': '🙁', '-3': '😢', '-5': '🌧'};
 function emojiFor(v){ return EMOJIS[v] || '😐'; }
+
+// 自定义心情下拉（普通按钮渲染文字可靠，规避原生 appearance:none 下拉按钮的文字渲染缺陷）
+(function(){
+  var wrap=document.getElementById('moodSelectWrap');
+  var btn=document.getElementById('moodBtn');
+  var btnText=document.getElementById('moodBtnText');
+  var menu=document.getElementById('moodMenu');
+  var hidden=document.getElementById('moodValue');
+  var icon=document.getElementById('moodIcon');
+  var opts=menu.querySelectorAll('.mood-opt');
+  function openMenu(){ wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+  function closeMenu(){ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+  function apply(val, label){
+    hidden.value=val;
+    btnText.textContent=label;
+    icon.textContent=emojiFor(val);
+    for(var i=0;i<opts.length;i++){
+      opts[i].classList.toggle('selected', opts[i].getAttribute('data-val')===String(val));
+    }
+  }
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(wrap.classList.contains('open')) closeMenu(); else openMenu();
+  });
+  for(var i=0;i<opts.length;i++){
+    opts[i].addEventListener('click', function(e){
+      e.stopPropagation();
+      apply(this.getAttribute('data-val'), this.textContent);
+      closeMenu();
+    });
+  }
+  document.addEventListener('click', function(){ closeMenu(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); });
+  apply(hidden.value, btnText.textContent);
+})();
 
 // 全量日记数据（后端渲染，最新在前）
 var ALL_ROWS = [
@@ -159,7 +204,8 @@ function renderSide(){
     btn.className = 'side-date' + (active ? ' active' : '');
     var head = SIDE_MODE === 'day'
       ? '<span class="sd-day">'+g.label+'</span><span class="sd-ym">'+g.sub+'</span>'
-      : '<span class="sd-day sd-day-wide">'+g.label+'</span><span class="sd-ym">'+g.sub+'</span>';
+      : '<span class="sd-day sd-day-wide">'+g.label+'</span>' +
+        (SIDE_MODE === 'week' ? '' : '<span class="sd-ym">'+g.sub+'</span>');
     btn.innerHTML = head +
       '<span class="sd-emoji">'+emojiFor(g.avg)+'</span>'+
       '<span class="sd-n">'+g.n+'条</span>';
@@ -175,7 +221,7 @@ function renderSide(){
     };
     el.appendChild(btn);
   });
-  if (groups.length === 0) el.innerHTML = '<div style="color:#adb5bd;font-size:13px;padding:10px 0">还没有日记，从今天开始吧。</div>';
+  if (groups.length === 0) el.innerHTML = '<div style="color:var(--color-muted);font-size:13px;padding:10px 0">还没有日记，从今天开始吧。</div>';
 }
 
 // 主列表是否应包含该行
@@ -211,7 +257,7 @@ function renderList(){
     var items = g.items.map(function(r){
       return '<div class="diary-item"><span class="diary-emoji">'+emojiFor(r.mood)+'</span>'+
         '<div class="diary-body"><span class="diary-time">'+r.time+'</span>'+
-        '<p>'+(r.note ? r.note : '<i style="color:#ced4da">（未写备注）</i>')+'</p></div></div>';
+        '<p>'+(r.note ? r.note : '<i style="color:var(--color-muted)">（未写备注）</i>')+'</p></div></div>';
     }).join('');
     sec.innerHTML = head + items;
     el.appendChild(sec);
@@ -232,7 +278,7 @@ function loadChart(range){
     chart.setOption({
       backgroundColor: 'transparent',
       title: {text: '心情变化曲线（-5 ~ +5）', subtext: {week:'近7天',month:'近30天',year:'近365天',all:'全部记录'}[range] + ' · 数值为你亲自选择的心情',
-              textStyle: {fontSize: 15}, subtextStyle: {fontSize: 11, color: '#868e96'}},
+              textStyle: {fontSize: 15}, subtextStyle: {fontSize: 11, color: '#787069'}},
       tooltip: {trigger: 'axis', triggerOn: 'click', renderMode: 'richText', confine: true,
         formatter: function(ps){
           var i = ps[0].dataIndex, nl = String.fromCharCode(10);
@@ -248,10 +294,10 @@ function loadChart(range){
       series: [{
         name: '心情', type: 'line', data: d.vals, smooth: true, connectNulls: false,
         symbol: 'circle', symbolSize: 8, showSymbol: true,
-        lineStyle: {color: '#ff6b6b', width: 3}, itemStyle: {color: '#ff6b6b'},
-        areaStyle: {color: 'rgba(255,107,107,.18)'},
-        markLine: {silent: true, symbol: 'none', lineStyle: {color: '#adb5bd', type: 'dashed'},
-          data: [{yAxis: 0, label: {formatter: '平静线', color: '#868e96', fontSize: 10}}]}
+        lineStyle: {color: '#c44039', width: 3}, itemStyle: {color: '#c44039'},
+        areaStyle: {color: 'rgba(196,64,57,.12)'},
+        markLine: {silent: true, symbol: 'none', lineStyle: {color: '#787069', type: 'dashed'},
+          data: [{yAxis: 0, label: {formatter: '平静线', color: '#787069', fontSize: 10}}]}
       }]
     }, true);
   });
@@ -283,36 +329,49 @@ loadChart('week');
 </script>
 
 <style>
+.mood-pick{display:flex;align-items:center;gap:8px}
+.mood-icon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;background:var(--color-error-soft);border-radius:50%;flex-shrink:0}
+.mood-select{position:relative;display:inline-block;min-width:130px}
+.mood-btn{width:100%;height:40px;min-height:40px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 12px;background:var(--color-cotton);border:1px solid var(--color-rule);border-radius:var(--radius-input);color:var(--color-ink);font-size:14px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,1);transition:border-color .15s,box-shadow .15s}
+.mood-btn:hover{border-color:var(--color-rule-2)}
+.mood-select.open .mood-btn{border-color:var(--color-accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--color-accent) 16%,transparent)}
+.mood-caret{flex-shrink:0;color:var(--color-muted);transition:transform .18s var(--ease-out)}
+.mood-select.open .mood-caret{transform:rotate(180deg)}
+.mood-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--color-cotton);border:1px solid var(--color-rule);border-radius:var(--radius-input);box-shadow:var(--shadow-pop);padding:4px;z-index:60;display:none}
+.mood-select.open .mood-menu{display:block}
+.mood-opt{width:100%;display:block;text-align:left;padding:8px 10px;border:none;background:transparent;border-radius:8px;color:var(--color-ink-2);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.mood-opt:hover{background:var(--color-error-soft);color:var(--color-ink)}
+.mood-opt.selected{background:var(--color-error-soft);color:var(--color-accent-2);font-weight:700}
 .mood-layout{display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start}
 .mood-main{min-width:0}
 .mood-side{position:sticky;top:12px}
 .mood-side-card{max-height:calc(100vh - 120px);overflow-y:auto}
 .mood-chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-.range-tabs{display:flex;background:#fff5f5;border-radius:10px;padding:3px;gap:2px}
-.rtab{border:none;background:transparent;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#868e96;cursor:pointer;transition:.15s}
-.rtab.active{background:#ff6b6b;color:#fff}
+.range-tabs{display:flex;background:var(--color-error-soft);border-radius:var(--radius-card);padding:3px;gap:2px}
+.rtab{border:none;background:transparent;padding:6px 14px;border-radius:var(--radius-card);font-size:13px;font-weight:600;color:var(--color-muted);cursor:pointer;transition:.15s}
+.rtab.active{background:var(--color-error);color:var(--color-cotton)}
 .mood-list-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.mood-list-tip{font-size:12.5px;color:#868e96}
-.side-date{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:.15s;border:1px solid transparent}
-.side-date:hover{background:#fff5f5}
-.side-date.active{background:#fff0ec;border-color:#ffc9c9}
-.sd-day{width:34px;height:34px;border-radius:10px;background:#ffe8e6;color:#e8590c;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sd-ym{font-size:12.5px;color:#868e96;flex:1;min-width:0}
+.mood-list-tip{font-size:12.5px;color:var(--color-muted)}
+.side-date{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-card);cursor:pointer;transition:.15s;border:1px solid transparent;flex-wrap:wrap}
+.side-date:hover{background:var(--color-error-soft)}
+.side-date.active{background:var(--color-error-soft);border-color:var(--color-error)}
+.sd-day{min-width:34px;height:34px;padding:0 6px;white-space:nowrap;border-radius:var(--radius-card);background:var(--color-error-soft);color:var(--color-warn);font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sd-ym{font-size:12.5px;color:var(--color-muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sd-emoji{font-size:18px;flex-shrink:0}
-.sd-n{font-size:11.5px;color:#adb5bd;background:#f1f3f5;border-radius:8px;padding:2px 7px;flex-shrink:0}
-.side-tabs{display:flex;background:#fff5f5;border-radius:10px;padding:3px;gap:2px;margin-bottom:4px}
-.stab{border:none;background:transparent;padding:5px 0;flex:1;border-radius:7px;font-size:12px;font-weight:600;color:#868e96;cursor:pointer;transition:.15s}
-.stab.active{background:#ff6b6b;color:#fff}
-.sd-day-wide{width:auto;min-width:0;height:auto;min-height:34px;padding:6px 10px;font-size:12.5px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;border-radius:10px;background:#ffe8e6;color:#e8590c;flex-shrink:0}
-.diary-day{background:#fffaf7;border:1px solid #ffede3;border-radius:14px;padding:12px 14px;margin-bottom:12px}
-.diary-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:#868e96}
-.diary-day-head b{color:#e8590c;font-size:14px}
-.diary-item{display:flex;gap:10px;padding:8px 0;border-top:1px dashed #ffe8dc}
+.sd-n{font-size:11.5px;color:var(--color-muted);background:var(--color-paper-2);border-radius:var(--radius-card);padding:2px 7px;flex-shrink:0}
+.side-tabs{display:flex;background:var(--color-error-soft);border-radius:var(--radius-card);padding:3px;gap:2px;margin-bottom:4px}
+.stab{border:none;background:transparent;padding:5px 0;flex:1;border-radius:var(--radius-input);font-size:12px;font-weight:600;color:var(--color-muted);cursor:pointer;transition:.15s}
+.stab.active{background:var(--color-error);color:var(--color-cotton)}
+.sd-day-wide{width:auto;min-width:0;height:auto;min-height:34px;padding:6px 10px;font-size:12.5px;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;border-radius:var(--radius-card);background:var(--color-error-soft);color:var(--color-warn);flex-shrink:0}
+.diary-day{background:var(--color-warn-soft);border:1px solid var(--color-error-soft);border-radius:var(--radius-card);padding:12px 14px;margin-bottom:12px}
+.diary-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:var(--color-muted)}
+.diary-day-head b{color:var(--color-warn);font-size:14px}
+.diary-item{display:flex;gap:10px;padding:8px 0;border-top:1px dashed var(--color-error-soft)}
 .diary-item:first-of-type{border-top:none}
 .diary-emoji{font-size:22px}
 .diary-body{flex:1;min-width:0}
-.diary-time{font-size:11.5px;color:#adb5bd}
-.diary-body p{font-size:13.5px;color:#495057;line-height:1.7;margin:3px 0 0}
+.diary-time{font-size:11.5px;color:var(--color-muted)}
+.diary-body p{font-size:13.5px;color:var(--color-ink-2);line-height:1.7;margin:3px 0 0}
 @media (max-width: 900px){
   .mood-layout{grid-template-columns:1fr}
   .mood-side{position:static}

@@ -21,15 +21,15 @@
         <span class="tag tag-blue">{{ info.title }}</span>
         <span class="tag {{ sm.get(r.status,['','tag',''])[1] }}">{{ sm.get(r.status,[r.status,'tag',''])[0] }}</span>
       </div>
-      <p style="margin:10px 0 4px;color:#495057"><b>🗓 时间：</b>{{ r.date }}　{{ r.time_slot }}</p>
-      <p style="margin:4px 0;color:#495057"><b>📍 地点：</b>{{ info.location }}</p>
-      <p style="margin:4px 0;color:#495057"><b>💬 想聊的主题：</b>{{ r.topic or '（未填写）' }}</p>
-      <p style="margin:8px 0 0;font-size:13px;color:#868e96">{{ sm.get(r.status,['','',''])[2] }}</p>
+      <p style="margin:10px 0 4px;color:var(--color-ink-2)"><b>🗓 时间：</b>{{ r.date }}　{{ r.time_slot }}</p>
+      <p style="margin:4px 0;color:var(--color-ink-2)"><b>📍 地点：</b>{{ info.location }}</p>
+      <p style="margin:4px 0;color:var(--color-ink-2)"><b>💬 想聊的主题：</b>{{ r.topic or '（未填写）' }}</p>
+      <p style="margin:8px 0 0;font-size:13px;color:var(--color-muted)">{{ sm.get(r.status,['','',''])[2] }}</p>
     </div>
     <div style="text-align:center">
-      <p style="font-size:12px;color:#adb5bd">提交于 {{ r.created_at.strftime('%Y-%m-%d') }}</p>
+      <p style="font-size:12px;color:var(--color-muted)">提交于 {{ r.created_at.strftime('%Y-%m-%d') }}</p>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <a class="btn" style="background:#e9ecef;color:#495057;padding:8px 18px" href="{{ url_for('booking') }}">再次预约</a>
+        <a class="btn" style="background:var(--color-paper-2);color:var(--color-ink-2);padding:8px 18px" href="{{ url_for('booking') }}">再次预约</a>
         {% if r.status in ['pending','confirmed'] %}
         <form method="post" action="{{ url_for('my_booking_cancel', aid=r.id) }}"
               onsubmit="return confirm('确定取消这次预约吗？如需帮助可联系咨询师。')">
@@ -45,7 +45,7 @@
 <div class="card" style="text-align:center;padding:48px 20px">
   <div style="font-size:46px">🌤</div>
   <h3>你还没有预约记录</h3>
-  <p style="color:#868e96;margin:8px 0 18px">当情绪需要一个安全的出口，专业咨询师一直都在。首次咨询免费且保密。</p>
+  <p style="color:var(--color-muted);margin:8px 0 18px">当情绪需要一个安全的出口，专业咨询师一直都在。首次咨询免费且保密。</p>
   <a class="btn" href="{{ url_for('booking') }}">立即预约咨询 →</a>
 </div>
 {% endif %}

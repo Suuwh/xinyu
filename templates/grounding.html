@@ -3,7 +3,7 @@
 {% block body %}
 <div class="card" style="max-width:720px;margin:0 auto">
   <h2>🖐️ 5-4-3-2-1 感官着陆法</h2>
-  <p style="color:#868e96;font-size:14px">先做三个深呼吸，然后按顺序完成。在输入框里写下你当下真实看到/触到/听到的事物，把注意力拉回此刻。</p>
+  <p style="color:var(--color-muted);font-size:14px">先做三个深呼吸，然后按顺序完成。在输入框里写下你当下真实看到/触到/听到的事物，把注意力拉回此刻。</p>
   <div id="steps">
     <div class="gstep" data-n="5">
       <div class="ghead"><span class="gnum">5</span> 说出你<b>看到</b>的 5 样东西</div>
@@ -26,7 +26,7 @@
       <input class="gin" placeholder="如：牙膏的薄荷味、水的甘甜">
     </div>
   </div>
-  <div id="done" style="display:none;margin-top:16px;background:#d3f9d8;color:#2b8a3e;padding:16px;border-radius:12px;text-align:center">
+  <div id="done" style="display:none;margin-top:16px;background:var(--color-success-soft);color:var(--color-success);padding:16px;border-radius:var(--radius-card);text-align:center">
     🌿 很好，你已经回到当下了。如果仍很难受，可以去<a href="{{ url_for('help_page') }}">求助资源</a>或找咨询师聊聊。
   </div>
   <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
@@ -35,9 +35,9 @@
   </div>
 </div>
 <style>
-.gstep{margin:16px 0;padding:16px;background:#fff8f0;border-radius:14px}
+.gstep{margin:16px 0;padding:16px;background:var(--color-warn-soft);border-radius:var(--radius-card)}
 .ghead{font-size:16px;margin-bottom:8px}
-.gnum{display:inline-flex;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#ff6b6b,#ffd43b);color:#fff;align-items:center;justify-content:center;font-weight:800;margin-right:8px}
+.gnum{display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--color-error);color:var(--color-cotton);align-items:center;justify-content:center;font-weight:800;margin-right:8px}
 .gin{margin-top:8px}
 </style>
 {% endblock %}

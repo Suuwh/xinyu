@@ -1,5 +1,0 @@
-# 忽略模型权重文件
-models/bge-m3/model.safetensors
-models/qwen2.5-1.5b-instruct-q4_k_m.gguf
-# 忽略整个pylibs文件夹
-pylibs/

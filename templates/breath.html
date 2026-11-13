@@ -4,19 +4,19 @@
 <style>
 .breath-wrap{text-align:center;padding:34px 0 44px}
 .breath-circle{position:relative;width:250px;height:250px;border-radius:50%;margin:26px auto;
-  background:#fff4e6;border:5px solid #ffa94d;overflow:hidden;box-shadow:0 8px 28px rgba(255,107,107,.18)}
+  background:var(--color-warn-soft);border:5px solid var(--color-warn);overflow:hidden;box-shadow:0 8px 28px rgba(232,137,12,.18)}
 .breath-fill{position:absolute;left:0;right:0;bottom:0;height:0%;
-  background:linear-gradient(180deg,#ffd43b,#ff6b6b);z-index:1}
+  background:var(--color-error);z-index:1}
 .breath-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  color:#fff;font-size:26px;font-weight:800;z-index:2;text-shadow:0 1px 6px rgba(0,0,0,.35);letter-spacing:2px}
-.phase{font-size:20px;color:#e8590c;font-weight:700;margin-top:18px}
-.tip{color:#868e96;font-size:14px;margin-top:10px}
+  color:var(--color-cotton);font-size:26px;font-weight:800;z-index:2;text-shadow:0 1px 6px rgba(var(--rgb-shadow),.35);letter-spacing:2px}
+.phase{font-size:20px;color:var(--color-warn);font-weight:700;margin-top:18px}
+.tip{color:var(--color-muted);font-size:14px;margin-top:10px}
 .breath-actions{display:flex;gap:12px;justify-content:center;margin-top:16px}
 </style>
 {% endblock %}
 {% block body %}
 <div class="card breath-wrap">
-  <h2>🫁 4-7-8 呼吸放松训练</h2>
+  <h2>🌬️ 4-7-8 呼吸放松训练</h2>
   <p class="tip">跟着圆圈节奏：吸气4秒 → 屏息7秒 → 呼气8秒，重复3轮即可平复焦虑。</p>
   <div class="breath-circle" id="circle">
     <div class="breath-fill" id="fill"></div>

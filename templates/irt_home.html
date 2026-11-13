@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}IRT 自适应测评 · 心隅{% endblock %}
 {% block body %}
-<div class="hero-banner" style="background:linear-gradient(120deg,#4dabf7,#7048e8);color:#fff">
+<div class="hero-banner hero-banner--dark">
   <h1>🎯 IRT 自适应心理测评</h1>
   <p>基于项目反应理论（Item Response Theory），根据你的每一次作答实时调整题目，<b>少做题、测得准</b>。</p>
 </div>
@@ -9,21 +9,21 @@
 <div class="card">
   <h2>🧠 什么是自适应测评？</h2>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:10px">
-    <div style="padding:14px;background:#f1f8ff;border-radius:12px">
-      <b style="color:#1971c2">📊 实时估计</b>
-      <p style="font-size:13px;color:#495057;margin:6px 0 0">每答一题，算法用 EAP 方法更新你的心理潜变量 θ 估计与测量标准误。</p>
+    <div style="padding:14px;background:var(--color-paper-2);border-radius:var(--radius-card)">
+      <b style="color:var(--color-accent-2)">📊 实时估计</b>
+      <p style="font-size:13px;color:var(--color-ink-2);margin:6px 0 0">每答一题，算法用 EAP 方法更新你的心理潜变量 θ 估计与测量标准误。</p>
     </div>
-    <div style="padding:14px;background:#f3f0ff;border-radius:12px">
-      <b style="color:#5f3dc4">🎯 精准选题</b>
-      <p style="font-size:13px;color:#495057;margin:6px 0 0">下一题从题库中自动选择在当前 θ 处 Fisher 信息量最大的题，跳过对测量无贡献的冗余题。</p>
+    <div style="padding:14px;background:var(--color-paper-2);border-radius:var(--radius-card)">
+      <b style="color:var(--color-ink)">🎯 精准选题</b>
+      <p style="font-size:13px;color:var(--color-ink-2);margin:6px 0 0">下一题从题库中自动选择在当前 θ 处 Fisher 信息量最大的题，跳过对测量无贡献的冗余题。</p>
     </div>
-    <div style="padding:14px;background:#fff4e6;border-radius:12px">
-      <b style="color:#d9480f">⏱ 智能终止</b>
-      <p style="font-size:13px;color:#495057;margin:6px 0 0">作答不少于 5 题且测量标准误 SE ≤ 0.3 时自动停止；若题库题目全部答完也会结束。SAS/SDS 通常 13–20 题、SCL-90 通常 9–25 题。</p>
+    <div style="padding:14px;background:var(--color-warn-soft);border-radius:var(--radius-card)">
+      <b style="color:var(--color-warn)">⏱ 智能终止</b>
+      <p style="font-size:13px;color:var(--color-ink-2);margin:6px 0 0">作答不少于 5 题且测量标准误 SE ≤ 0.3 时即达成目标精度并自动停止；若在有限题量内未能把 SE 降到 0.3（多见于症状较重的极端区间），达到最多题数后也会结束，报告会如实标注实际 SE 与精度说明。SAS/SDS 通常 13–20 题、SCL-90 通常 9–25 题。</p>
     </div>
-    <div style="padding:14px;background:#ebfbee;border-radius:12px">
-      <b style="color:#2b8a3e">📈 标准报告</b>
-      <p style="font-size:13px;color:#495057;margin:6px 0 0">输出 T 分、95% 置信区间、风险等级与维度剖面（SCL-90 含 9 大症状因子）。</p>
+    <div style="padding:14px;background:var(--color-success-soft);border-radius:var(--radius-card)">
+      <b style="color:var(--color-success)">📈 标准报告</b>
+      <p style="font-size:13px;color:var(--color-ink-2);margin:6px 0 0">输出 T 分、95% 置信区间、风险等级与维度剖面（SCL-90 含 9 大症状因子）。</p>
     </div>
   </div>
 </div>
@@ -43,10 +43,10 @@
         <span class="tag tag-blue">题库 {{ sc.n_total }} 题</span>
         <span class="tag">最多 {{ sc.max_items }} 题</span>
       </div>
-      <p style="font-size:13px;color:#868e96;line-height:1.6">{{ sc.description }}</p>
+      <p style="font-size:13px;color:var(--color-muted);line-height:1.6">{{ sc.description }}</p>
       {% if sc.last %}
       <div style="margin:8px 0">
-        <span class="tag tag-orange">最近：{{ sc.last.level }} · T{{ sc.last.t_score }} · {{ sc.last.created_at.strftime('%m-%d') }}</span>
+        <span class="tag tag-orange">最近：{{ sc.last.level }} · T{{ sc.last.t_score }} · {{ sc.last.created_at.strftime('%Y-%m-%d') }}</span>
       </div>
       {% endif %}
       <div style="margin-top:10px">
@@ -55,7 +55,7 @@
     </div>
     {% endfor %}
   </div>
-  <p style="font-size:12px;color:#adb5bd;margin-top:14px">
+  <p style="font-size:12px;color:var(--color-muted);margin-top:14px">
     ⚠️ 本测评基于公开量表心理测量学研究演示性标定，结果用于自我了解，<b>不能替代精神科诊断</b>。如有强烈痛苦请及时联系辅导员或拨打 24h 危机热线 400-161-9995。
     · <a href="{{ url_for('irt_history') }}">我的测评历史 →</a>
   </p>

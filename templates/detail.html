@@ -3,14 +3,14 @@
 {% block body %}
 <div class="card">
   <h2>📌 {{ p.title }}</h2>
-  <div style="color:#adb5bd;font-size:13px;margin-bottom:10px">{{ p.nickname }} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }} · ❤️ {{ p.likes }}</div>
+  <div style="color:var(--color-muted);font-size:13px;margin-bottom:10px">{{ p.nickname }} · {{ p.created_at.strftime('%Y-%m-%d %H:%M') }} · ❤️ {{ p.likes }}</div>
   <p style="white-space:pre-wrap">{{ p.content }}</p>
   {% if p.media_kind == 'image' %}
-  <div style="margin:12px 0"><img src="{{ p.media_url }}" alt="树洞配图" style="max-width:100%;border-radius:12px;display:block"></div>
+  <div style="margin:12px 0"><img src="{{ p.media_url }}" alt="树洞配图" style="max-width:100%;border-radius:var(--radius-card);display:block"></div>
   {% elif p.media_kind == 'audio' %}
   <div style="margin:12px 0"><audio controls style="width:100%" src="{{ p.media_url }}"></audio></div>
   {% elif p.media_kind == 'video' %}
-  <div style="margin:12px 0"><video controls style="max-width:100%;border-radius:12px" src="{{ p.media_url }}"></video></div>
+  <div style="margin:12px 0"><video controls style="max-width:100%;border-radius:var(--radius-card)" src="{{ p.media_url }}"></video></div>
   {% endif %}
   <p style="margin-top:10px">
     {% for t in p.tags.split() %}<span class="tag">#{{ t }}</span>{% endfor %}
@@ -21,11 +21,11 @@
 <div class="card">
   <h3>💬 温暖回应</h3>
   {% for c in comments %}
-  <div style="padding:10px 0;border-bottom:1px solid #fff1e6">
+  <div style="padding:10px 0;border-bottom:1px solid var(--color-warn-soft)">
     <b>{{ c.nickname }}</b>：{{ c.content }}
-    <div style="color:#adb5bd;font-size:12px">{{ c.created_at.strftime('%m-%d %H:%M') }}</div>
+    <div style="color:var(--color-muted);font-size:12px">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
   </div>
-  {% else %}<p style="color:#adb5bd">还没有回应，做第一个温暖TA的人吧。</p>{% endfor %}
+  {% else %}<p style="color:var(--color-muted)">还没有回应，做第一个温暖TA的人吧。</p>{% endfor %}
   <form method="post" style="margin-top:14px">
     <textarea name="content" rows="2" placeholder="说点鼓励的话…" required></textarea>
     <button class="btn btn-mint" style="margin-top:8px">送出温柔</button>

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}心理资讯 · 心隅教师端{% endblock %}
 {% block body %}
-<div class="hero-banner" style="background:linear-gradient(120deg,#1c6dd9,#15aabf)">
+<div class="hero-banner hero-banner--dark">
   <h1>📰 心理资讯中心</h1>
   <p>实时聚合中国网心理频道最新动态，每30分钟自动刷新。</p>
 </div>
@@ -10,14 +10,14 @@
   <a class="btn {{ 'btn-ghost' if sec!=active else '' }}" href="{{ url_for('teacher_news', section=sec) }}">{{ sec }}</a>
   {% endfor %}
   <a class="btn btn-ghost" href="{{ url_for('teacher_news_all', section=active) }}">📚 往期文章</a>
-  <span style="margin-left:auto;font-size:12px;color:#868e96">
+  <span style="margin-left:auto;font-size:12px;color:var(--color-muted)">
     更新于 {{ news_t }} ·
-    {% if online %}<span style="color:#2b8a3e">● 实时在线</span>{% else %}<span style="color:#e8590c">● 离线精选</span>{% endif %}
+    {% if online %}<span style="color:var(--color-success)">● 实时在线</span>{% else %}<span style="color:var(--color-warn)">● 离线精选</span>{% endif %}
   </span>
 </div>
 <div class="card" style="padding:12px 16px;margin-bottom:14px">
-  <form method="get" action="{{ url_for('teacher_news_search') }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <input type="text" name="q" placeholder="🔍 搜索资讯（先站内，无结果自动引导公网检索）…" style="flex:1;min-width:200px;padding:9px 14px;border:1px solid #e0e6ed;border-radius:10px;font-size:14px">
+  <form method="get" action="{{ url_for('teacher_news_search') }}" class="inline-form">
+    <input type="text" name="q" placeholder="🔍 搜索资讯（先站内，无结果自动引导公网检索）…" style="flex:1;min-width:200px">
     <button class="btn btn-sm">搜索</button>
   </form>
 </div>
@@ -27,14 +27,14 @@
     {% for it in items %}
     <tr>
       <td>{{ it.title }}</td>
-      <td style="white-space:nowrap;color:#868e96">{{ it.date }}</td>
-      <td style="font-size:12px;color:#1971c2;white-space:nowrap">中国网心理频道</td>
+      <td style="white-space:nowrap;color:var(--color-muted)">{{ it.date }}</td>
+      <td style="font-size:12px;color:var(--color-accent-2);white-space:nowrap">中国网心理频道</td>
       <td>
         <a class="btn btn-sm btn-sky" href="{{ url_for('teacher_article', url=it.url) }}">站内阅读</a>
       </td>
     </tr>
     {% endfor %}
   </table>
-  <p style="margin-top:10px;font-size:12px;color:#adb5bd">信息源：中国网心理频道 psy.china.com.cn（{{ active }}栏目）· 每30分钟自动抓取 · 点击"站内阅读"在本项目内阅读全文</p>
+  <p style="margin-top:10px;font-size:12px;color:var(--color-muted)">信息源：中国网心理频道 psy.china.com.cn（{{ active }}栏目）· 每30分钟自动抓取 · 点击"站内阅读"在本项目内阅读全文</p>
 </div>
 {% endblock %}

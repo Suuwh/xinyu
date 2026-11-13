@@ -3,14 +3,14 @@
 {% block body %}
 <div class="card">
   <h2>{{ scale.name }}</h2>
-  <p style="color:#868e96;font-size:14px">{{ scale.desc }}</p>
+  <p style="color:var(--color-muted);font-size:14px">{{ scale.desc }}</p>
   <form method="post">
     {% for q in scale.questions %}
-      <div style="margin:16px 0;padding:14px;background:#fff8f0;border-radius:12px">
+      <div style="margin:16px 0;padding:14px;background:var(--color-warn-soft);border-radius:var(--radius-card)">
         <b>{{ loop.index }}. {{ q }}</b>
         <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:14px">
           {% for label, val in scale.options %}
-          <label style="font-size:14px;color:#495057;display:flex;align-items:center;gap:4px">
+          <label style="font-size:14px;color:var(--color-ink-2);display:flex;align-items:center;gap:4px">
             <input type="radio" name="q" value="{{ val }}" required> {{ label }}
           </label>
           {% endfor %}

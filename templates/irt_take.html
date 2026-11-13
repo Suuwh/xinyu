@@ -4,41 +4,41 @@
 <div class="card" style="max-width:720px;margin:0 auto">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
     <h2 style="margin:0">{{ scale.name }}</h2>
-    <a href="{{ url_for('irt_home') }}" style="font-size:13px;color:#868e96">← 退出测评</a>
+    <a href="{{ url_for('irt_home') }}" style="font-size:13px;color:var(--color-muted)">← 退出测评</a>
   </div>
-  <p style="font-size:13px;color:#868e96;margin-top:0">
-    自适应测评：算法将根据你的每一次作答自动选择下一题，在最少的题量下达到目标精度即结束；若本题库题目全部答完也会结束。
+  <p style="font-size:13px;color:var(--color-muted);margin-top:0">
+    自适应测评：算法将根据你的每一次作答自动选择下一题，在最少的题量下逼近目标精度。本测评有两种结束方式：达到目标精度（SE ≤ 0.3），或达到本题库的最多题数；后一种情况下报告会如实标注实际精度。
   </p>
 
   <!-- 进度面板 -->
-  <div style="background:#f8f9fa;border-radius:12px;padding:12px 14px;margin:12px 0">
+  <div style="background:var(--color-paper-2);border-radius:var(--radius-card);padding:12px 14px;margin:12px 0">
     <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
       <span>已作答题数：<b id="nCount">0</b> 题（本题库共 {{ scale.max_items }} 题）</span>
       <span>当前 θ 估计：<b id="thetaVal">0.00</b>（SE <b id="seVal">1.00</b>）</span>
     </div>
-    <div style="height:8px;background:#e9ecef;border-radius:4px;overflow:hidden">
-      <div id="progBar" style="height:100%;width:0;background:linear-gradient(90deg,#4dabf7,#7048e8);transition:width .3s"></div>
+    <div style="height:8px;background:var(--color-paper-2);border-radius:var(--radius-input);overflow:hidden">
+      <div id="progBar" style="height:100%;width:0;background:var(--color-accent);transition:width .3s"></div>
     </div>
-    <p style="font-size:11.5px;color:#adb5bd;margin:6px 0 0">
-      θ 越高代表该维度症状越重；SE 越小代表测量越准。作答不少于 5 题且 SE ≤ 0.3 时自动完成；若题目全部答完也会结束。
+    <p style="font-size:11.5px;color:var(--color-muted);margin:6px 0 0">
+      θ 越高代表该维度症状越重；SE 越小代表测量越准。作答不少于 5 题且 SE ≤ 0.3 时即达成目标精度并自动完成；若在有限题量内未能把 SE 降到 0.3（多见于症状较重的极端区间），达到最多题数后也会结束，并在报告中如实说明实际 SE。
     </p>
   </div>
 
   <!-- 题目区 -->
   <div id="qBox">
-    <div id="qDim" style="display:inline-block;font-size:12px;color:#5f3dc4;background:#f3f0ff;padding:3px 10px;border-radius:8px;margin-bottom:10px"></div>
+    <div id="qDim" style="display:inline-block;font-size:12px;color:var(--color-ink);background:var(--color-paper-2);padding:3px 10px;border-radius:var(--radius-card);margin-bottom:10px"></div>
     <h3 id="qStem" style="font-size:18px;line-height:1.6;margin:0 0 18px;min-height:54px">正在加载第一题…</h3>
     <div id="qOpts" style="display:flex;flex-direction:column;gap:10px"></div>
   </div>
 
-  <div id="qLoading" style="display:none;text-align:center;padding:30px;color:#868e96">正在根据你的作答选题…</div>
+  <div id="qLoading" style="display:none;text-align:center;padding:30px;color:var(--color-muted)">正在根据你的作答选题…</div>
 </div>
 
 <form id="finishForm" method="get" action="{{ url_for('irt_finish', tid=rec.id) }}" style="display:none"></form>
 
 <style>
-.opt-btn{text-align:left;padding:12px 16px;border:2px solid #e9ecef;border-radius:12px;background:#fff;font-size:14.5px;cursor:pointer;transition:.15s}
-.opt-btn:hover{border-color:#7048e8;background:#f8f5ff;transform:translateX(3px)}
+.opt-btn{text-align:left;padding:12px 16px;border:2px solid var(--color-paper-2);border-radius:var(--radius-card);background:var(--color-cotton);font-size:14.5px;cursor:pointer;transition:.15s}
+.opt-btn:hover{border-color:var(--color-ink);background:var(--color-paper-2);transform:translateX(3px)}
 </style>
 <script>
 var state = { current: null, n: 0, max: {{ scale.max_items|tojson }} };
@@ -80,6 +80,8 @@ function submitAnswer(itemId, score) {
       var tip;
       if (d.stop_reason === 'se_reached') {
         tip = '✅ 已达到目标测量精度（SE ≤ 0.3），正在生成报告…';
+      } else if (d.stop_reason === 'max_items') {
+        tip = '⏱ 已达到本次测评的最多题数（' + state.max + ' 题），正在生成报告…';
       } else {
         tip = '📋 本题库题目已全部作答完毕，正在生成报告…';
       }

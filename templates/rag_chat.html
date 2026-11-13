@@ -1,32 +1,33 @@
 {% extends "base.html" %}
 {% block title %}私人AI心理咨询 · 心隅{% endblock %}
 {% block body %}
+{% set emo_icon = {"平静":"😌","喜悦":"😊","焦虑":"😰","低落":"😔","愤怒":"😠","恐惧":"😨","压力过载":"😫"} %}
 <div style="display:flex;gap:14px;max-width:1080px;margin:14px auto;height:calc(100vh - 110px)">
 
   <!-- 左侧：历史会话 -->
   <div class="card" style="width:230px;flex-shrink:0;display:flex;flex-direction:column;padding:12px;overflow:hidden">
-    <a href="{{ url_for('rag_chat_page') }}" class="btn" style="width:100%;margin-bottom:10px;background:#5f3dc4;color:#fff">＋ 新建对话</a>
-    <div style="font-size:12px;color:#adb5bd;padding:0 4px 6px;display:flex;justify-content:space-between;align-items:center"><span>历史对话</span><span style="color:#9775fa;cursor:help" title="在某条对话上点击鼠标右键即可删除">右键删除</span></div>
+    <a href="{{ url_for('rag_chat_page') }}" class="btn" style="width:100%;margin-bottom:10px">＋ 新建对话</a>
+    <div style="font-size:12px;color:var(--color-muted);padding:0 4px 6px;display:flex;justify-content:space-between;align-items:center"><span>历史对话</span><span style="color:var(--color-accent-2);cursor:help" title="在某条对话上点击鼠标右键即可删除">右键删除</span></div>
     <div id="sessionList" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
       {% for s in sessions %}
       <a href="{{ url_for('rag_chat_page', sid=s.id) }}"
          class="rag-sess {% if cur and cur.id==s.id %}active{% endif %}"
          data-sid="{{ s.id }}">
         <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">💬 {{ s.title }}</div>
-        <div style="font-size:11px;color:#adb5bd;margin-top:2px">{{ s.last_at.strftime('%m-%d %H:%M') }}</div>
+        <div style="font-size:11px;color:var(--color-muted);margin-top:2px">{{ s.last_at.strftime('%Y-%m-%d %H:%M') }}</div>
       </a>
       {% else %}
-      <div style="font-size:12px;color:#ced4da;text-align:center;padding:20px 4px">暂无历史对话</div>
+      <div style="font-size:12px;color:var(--color-muted);text-align:center;padding:20px 4px">暂无历史对话</div>
       {% endfor %}
     </div>
   </div>
 
   <!-- 右侧：对话主区 -->
   <div class="card" style="flex:1;display:flex;flex-direction:column;padding:16px;overflow:hidden">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid #eef2f7">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--color-paper-2)">
       <div>
         <h2 style="margin:0;font-size:18px">🧠 私人AI心理咨询</h2>
-        <p style="margin:4px 0 0;font-size:12px;color:#868e96">
+        <p style="margin:4px 0 0;font-size:12px;color:var(--color-muted)">
           🔒 全程私密 · 对话仅保存在本机、不上传云端 · 只做陪伴倾听，不做疾病诊断
         </p>
       </div>
@@ -35,7 +36,7 @@
       </span>
     </div>
 
-    <div style="background:#f8f9fa;padding:8px 12px;border-radius:10px;margin:10px 0;font-size:12px;color:#868e96;line-height:1.5">
+    <div style="background:var(--color-paper-2);padding:8px 12px;border-radius:var(--radius-card);margin:10px 0;font-size:12px;color:var(--color-muted);line-height:1.5">
       💡 本地 CPU 推理，每次回复约需 <b>10–30 秒</b>，请耐心等待，不要重复点击发送。
       出现自伤/伤人念头时会立刻引导你联系 24h 热线 <b>400-161-9995</b>。
     </div>
@@ -43,22 +44,32 @@
     <!-- 消息流 -->
     <div id="msgBox" style="flex:1;overflow-y:auto;padding:10px 4px;display:flex;flex-direction:column;gap:12px">
       {% if not msgs %}
-      <div style="text-align:center;color:#adb5bd;font-size:12.5px;padding:10px">— 开始一段新的对话 —</div>
+      <div style="text-align:center;color:var(--color-muted);font-size:12.5px;padding:10px">— 开始一段新的对话 —</div>
       {% endif %}
       {% for m in msgs -%}
       {% if m.role=='assistant' -%}
       <div class="bubble assistant{% if m.crisis %} crisis{% endif %}"><span class="md-raw">{{ m.content }}</span>{% if m.sources %}<span class="meta">📚 参考：{{ m.sources }}</span>{% endif %}</div>
       {%- else -%}
-      <div class="bubble user{% if m.crisis %} crisis{% endif %}">{{ m.content }}</div>
+      {% set emos = m.emotion | from_json %}
+      <div class="bubble user{% if m.crisis %} crisis{% endif %}">
+        <div class="bubble-text">{{ m.content }}</div>
+        {% if emos %}
+        <div class="emo-line">
+          {% for e in emos if e.score >= 0.18 %}
+          <span class="emo-chip">{{ emo_icon[e.label] }} {{ e.label }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
       {%- endif %}
       {% endfor %}
     </div>
 
     <!-- 输入区 -->
-    <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid #eef2f7">
+    <div style="display:flex;gap:8px;align-items:stretch;padding-top:10px;border-top:1px solid var(--color-paper-2)">
       <textarea id="msgInput" rows="2" placeholder="说说你现在的感受…（回车发送，Shift+回车换行）"
-        style="flex:1;padding:10px 12px;border:1.5px solid #dee2e6;border-radius:10px;font-size:14px;resize:none;font-family:inherit"></textarea>
-      <button id="sendBtn" class="btn" style="align-self:stretch;background:#5f3dc4;color:#fff;min-width:80px">发送</button>
+        style="flex:1;margin-bottom:0;padding:10px 12px;border:1.5px solid var(--color-rule);border-radius:var(--radius-card);font-size:14px;resize:none;font-family:inherit"></textarea>
+      <button id="sendBtn" class="btn" style="align-self:stretch;min-width:80px">发送</button>
     </div>
   </div>
 </div>
@@ -76,27 +87,33 @@
 </div>
 
 <style>
-.rag-sess{display:block;padding:8px 10px;border-radius:8px;text-decoration:none;color:#495057;transition:.15s}
-.rag-sess:hover{background:#f1f3f5}
-.rag-sess.active{background:#f3f0ff;color:#5f3dc4;font-weight:600}
-.bubble{max-width:80%;padding:10px 14px;border-radius:14px;line-height:1.65;font-size:14px;white-space:pre-wrap}
-.bubble.user{align-self:flex-end;background:#4dabf7;color:#fff;border-bottom-right-radius:4px}
-.bubble.assistant{align-self:flex-start;background:#f1f3f5;color:#212529;border-bottom-left-radius:4px;white-space:normal}
+.rag-sess{display:block;padding:8px 10px;border-radius:var(--radius-card);text-decoration:none;color:var(--color-ink-2);transition:.15s}
+.rag-sess:hover{background:var(--color-paper-2)}
+.rag-sess.active{background:var(--color-paper-2);color:var(--color-ink);font-weight:600}
+.bubble{max-width:80%;padding:10px 14px;border-radius:var(--radius-card);line-height:1.65;font-size:14px;white-space:normal}
+.bubble.user{align-self:flex-end;background:var(--color-accent);color:var(--color-cotton);border-bottom-right-radius:4px}
+.bubble.assistant{align-self:flex-start;background:var(--color-paper-2);color:var(--color-ink);border-bottom-left-radius:4px;white-space:normal}
 .bubble.assistant ol,.bubble.assistant ul{margin:6px 0;padding-left:22px}
 .bubble.assistant li{margin:3px 0}
-.bubble.assistant b{color:#1c3d6e}
-.bubble.assistant code{background:#e9ecef;padding:1px 5px;border-radius:5px;font-size:12.5px}
-.bubble.crisis{background:#ffe3e3;border:2px solid #c92a2a;color:#c92a2a}
+.bubble.assistant b{color:var(--color-board)}
+.bubble.assistant code{background:var(--color-paper-2);padding:1px 5px;border-radius:var(--radius-input);font-size:12.5px}
+.bubble.crisis{background:var(--color-error-soft);border:2px solid var(--color-error);color:var(--color-error)}
 .bubble .meta{display:block;margin-top:6px;font-size:11px;opacity:.75}
-.typing{align-self:flex-start;color:#5f3dc4;font-size:13px;padding:8px 12px;font-style:italic}
+/* 用户气泡内的情绪标签 */
+.bubble.user .bubble-text{white-space:pre-wrap}
+.bubble.user .emo-line{margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,249,238,.28);display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.bubble.user .emo-chip{background:rgba(255,249,238,.22);font-size:11px;padding:1px 9px;border-radius:var(--radius-card);line-height:1.5}
+.bubble.crisis .emo-line{border-top-color:rgba(232,137,12,.3)}
+.bubble.crisis .emo-chip{background:rgba(232,137,12,.12)}
+.typing{align-self:flex-start;color:var(--color-ink);font-size:13px;padding:8px 12px;font-style:italic}
 .typing .dots::after{content:'';animation:dots 1.2s steps(4) infinite}
 @keyframes dots{0%{content:''}25%{content:'·'}50%{content:'··'}75%{content:'···'}}
 /* 删除对话确认弹窗 */
-.rag-mask{position:fixed;inset:0;background:rgba(20,40,70,.45);display:none;z-index:1200}
-.rag-delbox{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);width:min(380px,92vw);background:#fff;border-radius:18px;padding:26px 24px 22px;display:none;z-index:1300;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.rag-mask{position:fixed;inset:0;background:rgba(35,48,66,.42);display:none;z-index:1200}
+.rag-delbox{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);width:min(380px,92vw);background:var(--color-cotton);border-radius:var(--radius-card);padding:26px 24px 22px;display:none;z-index:1300;text-align:center;box-shadow:0 18px 50px rgba(var(--rgb-shadow),.2)}
 .rag-del-icon{font-size:32px;margin-bottom:6px}
-.rag-delbox h3{font-size:16.5px;color:#343a40;margin:0 0 10px}
-.rag-delbox p{font-size:13px;color:#868e96;line-height:1.7;margin:0 0 20px;text-align:left}
+.rag-delbox h3{font-size:16.5px;color:var(--color-ink);margin:0 0 10px}
+.rag-delbox p{font-size:13px;color:var(--color-muted);line-height:1.7;margin:0 0 20px;text-align:left}
 .rag-del-actions{display:flex;gap:10px;justify-content:center}
 .rag-del-actions .btn{padding:9px 20px}
 </style>
@@ -156,7 +173,12 @@ function addBubble(text, who, crisis, sources) {
   var div = document.createElement('div');
   div.className = 'bubble ' + who + (crisis ? ' crisis' : '');
   if (who === 'assistant') { div.innerHTML = md2html(text); }
-  else { div.textContent = text; }
+  else {
+    var t = document.createElement('div');
+    t.className = 'bubble-text';
+    t.textContent = text;
+    div.appendChild(t);
+  }
   if (sources) {
     var meta = document.createElement('span');
     meta.className = 'meta';
@@ -166,6 +188,23 @@ function addBubble(text, who, crisis, sources) {
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
   return div;
+}
+
+var EMO_ICON = {"平静":"😌","喜悦":"😊","焦虑":"😰","低落":"😔","愤怒":"😠","恐惧":"😨","压力过载":"😫"};
+function addEmotionLine(div, emotions) {
+  if (!emotions || !emotions.length) return;
+  var line = document.createElement('div');
+  line.className = 'emo-line';
+  var shown = 0;
+  for (var i = 0; i < emotions.length && shown < 3; i++) {
+    if (emotions[i].score < 0.18) continue;
+    var chip = document.createElement('span');
+    chip.className = 'emo-chip';
+    chip.textContent = (EMO_ICON[emotions[i].label] || '') + ' ' + emotions[i].label;
+    line.appendChild(chip);
+    shown++;
+  }
+  if (shown > 0) div.appendChild(line);
 }
 
 /* 历史 AI 消息：markdown 渲染 */
@@ -182,7 +221,7 @@ function send() {
   busy = true;
   sendBtn.disabled = true;
   sendBtn.textContent = '思考中';
-  addBubble(text, 'user');
+  var userBubble = addBubble(text, 'user');
 
   var typing = document.createElement('div');
   typing.className = 'typing';
@@ -209,6 +248,7 @@ function send() {
       return;
     }
     curSid = d.sid;
+    if (d.screen && d.screen.ready) { addEmotionLine(userBubble, d.screen.emotions); }
     addBubble(d.reply, 'assistant', d.crisis, (d.sources||[]).join('、'));
     var rs=document.getElementById('ragStatus');
     if(rs){rs.className='tag tag-blue';rs.textContent='🟢 模型已就绪';}
@@ -234,11 +274,11 @@ input.addEventListener('keydown', function(e) {
 // 历史对话：右键删除（自定义菜单 + 二次确认）
 var ctxMenu = document.createElement('div');
 ctxMenu.id = 'ragCtxMenu';
-ctxMenu.style.cssText = 'position:fixed;display:none;z-index:9999;background:#fff;border:1px solid #dee2e6;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;min-width:140px';
-ctxMenu.innerHTML = '<div class="ctx-item" style="padding:8px 12px;border-radius:7px;font-size:13px;color:#c92a2a;cursor:pointer;display:flex;align-items:center;gap:7px">🗑️ 删除此对话</div>';
+ctxMenu.style.cssText = 'position:fixed;display:none;z-index:9999;background:var(--color-cotton);border:1px solid var(--color-rule);border-radius:var(--radius-card);box-shadow:0 8px 24px rgba(var(--rgb-shadow),.14);padding:6px;min-width:140px';
+ctxMenu.innerHTML = '<div class="ctx-item" style="padding:8px 12px;border-radius:var(--radius-input);font-size:13px;color:var(--color-error);cursor:pointer;display:flex;align-items:center;gap:7px">🗑️ 删除此对话</div>';
 document.body.appendChild(ctxMenu);
 var ctxItem = ctxMenu.querySelector('.ctx-item');
-ctxItem.addEventListener('mouseenter', function(){ ctxItem.style.background = '#fff5f5'; });
+ctxItem.addEventListener('mouseenter', function(){ ctxItem.style.background = 'var(--color-error-soft)'; });
 ctxItem.addEventListener('mouseleave', function(){ ctxItem.style.background = ''; });
 var ctxSid = null;
 function hideCtx(){ ctxMenu.style.display = 'none'; ctxSid = null; }

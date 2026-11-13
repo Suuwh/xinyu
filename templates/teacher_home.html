@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}教师工作台 · 心隅{% endblock %}
 {% block body %}
-<div class="hero-banner" style="background:linear-gradient(120deg,#1c6dd9,#15aabf)">
+<div class="hero-banner hero-banner--dark">
   <h1>{{ '早上好' if now.hour<12 else ('下午好' if now.hour<18 else '晚上好') }}，{{ u.real_name or u.username }} 👋</h1>
   <p>今天也请温柔对待每一个把心事交给你的学生。以下是你今天的待办与重点关注。</p>
 </div>
@@ -32,7 +32,7 @@
       <span class="wd-appt-time">{{ a.time_slot }}</span>
       <div style="flex:1">
         <b>{{ a.topic or '未填写主题' }}</b>
-        <p style="font-size:12.5px;color:#868e96;margin-top:2px">预约编号 #{{ a.id }}</p>
+        <p style="font-size:12.5px;color:var(--color-muted);margin-top:2px">预约编号 #{{ a.id }}</p>
       </div>
       <span class="tag {{ 'tag-orange' if a.status=='pending' else 'tag-green' }}">
         {{ {'pending':'待确认','confirmed':'已确认','done':'已完成','cancelled':'已取消'}.get(a.status,a.status) }}
@@ -40,27 +40,27 @@
     </div>
     {% endfor %}
     {% else %}
-    <p style="color:#adb5bd;padding:14px 0">今天暂无预约安排，可以利用时间回复树洞与工单。</p>
+    <p style="color:var(--color-muted);padding:14px 0">今天暂无预约安排，可以利用时间回复树洞与工单。</p>
     {% endif %}
     <a class="btn btn-sm btn-ghost" href="{{ url_for('manage_booking') }}" style="margin-top:10px">进入预约管理 →</a>
   </div>
 
   <!-- 重点关注学生 -->
   <div class="card" style="margin:0">
-    <h3>🚩 重点关注学生 <small style="color:#868e96;font-weight:400;font-size:12px">最近一次测评风险指数≥60</small></h3>
+    <h3>🚩 重点关注学生 <small style="color:var(--color-muted);font-weight:400;font-size:12px">最近一次测评风险指数≥60</small></h3>
     {% if focus %}
     {% for f in focus %}
     <div class="wd-focus">
       <span class="wd-focus-av">{{ f.avatar }}</span>
       <div style="flex:1">
         <b>{{ f.name }}</b>
-        <p style="font-size:12px;color:#868e96;margin-top:1px">{{ f.scale }} · {{ f.level }}</p>
+        <p style="font-size:12px;color:var(--color-muted);margin-top:1px">{{ f.scale }} · {{ f.level }}</p>
       </div>
       <span class="wd-risk {{ 'wd-risk-hi' if f.risk>=60 }}">{{ f.risk }}</span>
     </div>
     {% endfor %}
     {% else %}
-    <p style="color:#51cf66;padding:14px 0">当前无风险指数≥60的学生 ✓</p>
+    <p style="color:var(--color-success);padding:14px 0">当前无风险指数≥60的学生 ✓</p>
     {% endif %}
     <a class="btn btn-sm btn-ghost" href="{{ url_for('dash') }}" style="margin-top:10px">查看完整看板 →</a>
   </div>
@@ -78,44 +78,44 @@
     <span class="wd-post-emoji">💬</span>
     <div style="flex:1">
       <b>{{ p.title }}</b>
-      <p style="font-size:13px;color:#868e96;margin-top:2px">{{ p.content[:80] }}{% if p.content|length>80 %}…{% endif %}</p>
+      <p style="font-size:13px;color:var(--color-muted);margin-top:2px">{{ p.content[:80] }}{% if p.content|length>80 %}…{% endif %}</p>
     </div>
-    <div style="text-align:right;font-size:12px;color:#adb5bd">
-      {{ p.created_at.strftime('%m-%d %H:%M') }}<br>❤️ {{ p.likes }}
+    <div style="text-align:right;font-size:12px;color:var(--color-muted)">
+      {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}<br>❤️ {{ p.likes }}
       {% if p.crisis_flag %}<span class="tag tag-red" style="display:inline-block;margin-top:4px">⚠ 危机</span>{% endif %}
     </div>
   </div>
   {% endfor %}
   {% else %}
-  <p style="color:#adb5bd;padding:14px 0">暂无树洞动态</p>
+  <p style="color:var(--color-muted);padding:14px 0">暂无树洞动态</p>
   {% endif %}
 </div>
 
 <div class="card" style="margin-top:18px">
   <h3>📌 今日寄语</h3>
-  <p style="color:#495057">心理咨询不是修理“有问题的人”，而是陪一个正在淋雨的人，一起找一把伞。
-    你的倾听，本身就是疗愈。</p>
+  <p class="wd-quote">心理咨询不是修理“有问题的人”，而是陪一个正在淋雨的人，一起找一把伞。你的倾听，本身就是疗愈。</p>
 </div>
 
 <style>
 .th-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 @media(max-width:900px){.th-stats{grid-template-columns:repeat(2,1fr)}}
-.th-stat{background:#fff;border-radius:16px;padding:16px;text-align:center;box-shadow:0 4px 14px rgba(28,109,217,.06);border:1px solid #eef2f7}
-.th-stat-link{display:block;transition:.15s;color:#343a40}
-.th-stat-link:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(28,109,217,.14);border-color:#74c0fc}
-.th-stat b{font-size:26px;color:#1c6dd9;display:block}
-.th-stat span{font-size:12.5px;color:#868e96}
-.th-stat small{display:block;margin-top:6px;font-size:11.5px;color:#1971c2}
-.wd-appt{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f4f8}
+.th-stat{background:var(--color-cotton);border-radius:var(--radius-card);padding:16px;text-align:center;box-shadow:0 4px 14px rgba(var(--rgb-shadow),.06);border:1px solid var(--color-paper-2)}
+.th-stat-link{display:block;transition:.15s;color:var(--color-ink)}
+.th-stat-link:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(var(--rgb-shadow),.14);border-color:var(--color-accent)}
+.th-stat b{font-size:26px;color:var(--color-ink);display:block}
+.th-stat span{font-size:12.5px;color:var(--color-muted)}
+.th-stat small{display:block;margin-top:6px;font-size:11.5px;color:var(--color-accent-2)}
+.wd-appt{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-paper-2)}
 .wd-appt:last-of-type{border-bottom:none}
-.wd-appt-time{background:#e7f1ff;color:#1971c2;border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap}
-.wd-focus{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f1f4f8}
+.wd-appt-time{background:var(--color-paper-2);color:var(--color-accent-2);border-radius:var(--radius-card);padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.wd-focus{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--color-paper-2)}
 .wd-focus:last-of-type{border-bottom:none}
 .wd-focus-av{font-size:24px}
-.wd-risk{width:38px;height:38px;border-radius:50%;background:#fff3bf;color:#e67700;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
-.wd-risk-hi{background:#ffe3e3;color:#c92a2a}
-.wd-post{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid #f1f4f8}
+.wd-risk{width:38px;height:38px;border-radius:50%;background:var(--color-warn-soft);color:var(--color-warn);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.wd-risk-hi{background:var(--color-error-soft);color:var(--color-error)}
+.wd-post{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--color-paper-2)}
 .wd-post:last-of-type{border-bottom:none}
 .wd-post-emoji{font-size:20px;margin-top:2px}
+.wd-quote{color:var(--color-ink-2);max-width:none;margin-bottom:0}
 </style>
 {% endblock %}

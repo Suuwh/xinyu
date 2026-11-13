@@ -9,31 +9,31 @@
 
   <!-- 总览 -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px">
-    <div style="text-align:center;padding:18px;background:#f8f9fa;border-radius:14px">
-      <div style="font-size:12px;color:#868e96">心理潜变量 θ</div>
-      <div style="font-size:28px;font-weight:800;color:#5f3dc4;margin-top:4px">{{ '%+.2f'|format(rec.theta) }}</div>
+    <div style="text-align:center;padding:18px;background:var(--color-paper-2);border-radius:var(--radius-card)">
+      <div style="font-size:12px;color:var(--color-muted)">心理潜变量 θ</div>
+      <div style="font-size:28px;font-weight:800;color:var(--color-ink);margin-top:4px">{{ '%+.2f'|format(rec.theta) }}</div>
     </div>
-    <div style="text-align:center;padding:18px;background:#f8f9fa;border-radius:14px">
-      <div style="font-size:12px;color:#868e96">T 分</div>
-      <div style="font-size:28px;font-weight:800;color:#1971c2;margin-top:4px">{{ rec.t_score }}</div>
+    <div style="text-align:center;padding:18px;background:var(--color-paper-2);border-radius:var(--radius-card)">
+      <div style="font-size:12px;color:var(--color-muted)">T 分</div>
+      <div style="font-size:28px;font-weight:800;color:var(--color-accent-2);margin-top:4px">{{ rec.t_score }}</div>
     </div>
-    <div style="text-align:center;padding:18px;background:#f8f9fa;border-radius:14px">
-      <div style="font-size:12px;color:#868e96">测量标准误 SE</div>
-      <div style="font-size:28px;font-weight:800;color:{{ '#2b8a3e' if rec.se <= 0.30 else '#d9480f' }};margin-top:4px">{{ '%.2f'|format(rec.se) }}</div>
-      <div style="font-size:11px;color:{{ '#2b8a3e' if rec.se <= 0.30 else '#d9480f' }};margin-top:2px">{{ '已达目标精度' if rec.se <= 0.30 else ('题库已用尽' if rec.n_items >= scale.max_items else '未达目标精度') }}</div>
+    <div style="text-align:center;padding:18px;background:var(--color-paper-2);border-radius:var(--radius-card)">
+      <div style="font-size:12px;color:var(--color-muted)">测量标准误 SE</div>
+      <div style="font-size:28px;font-weight:800;color:{{ 'var(--color-success)' if rec.se <= 0.30 else 'var(--color-warn)' }};margin-top:4px">{{ '%.2f'|format(rec.se) }}</div>
+      <div style="font-size:11px;color:{{ 'var(--color-success)' if rec.se <= 0.30 else 'var(--color-warn)' }};margin-top:2px">{{ '已达目标精度' if rec.se <= 0.30 else ('已达题数上限' if rec.n_items >= scale.max_items and scale.max_items < (scale["items"]|length) else ('题目已答完' if rec.n_items >= scale.max_items else '未达目标精度')) }}</div>
     </div>
-    <div style="text-align:center;padding:18px;background:#f8f9fa;border-radius:14px">
-      <div style="font-size:12px;color:#868e96">实际题数</div>
-      <div style="font-size:28px;font-weight:800;color:#d9480f;margin-top:4px">{{ rec.n_items }} 题</div>
+    <div style="text-align:center;padding:18px;background:var(--color-paper-2);border-radius:var(--radius-card)">
+      <div style="font-size:12px;color:var(--color-muted)">实际题数</div>
+      <div style="font-size:28px;font-weight:800;color:var(--color-warn);margin-top:4px">{{ rec.n_items }} 题</div>
     </div>
   </div>
 
   <!-- 风险等级横幅 -->
-  <div style="margin-top:16px;padding:16px 18px;border-radius:14px;background:
-    {% if level_cls == 'ok' %}#ebfbee;border-left:5px solid #2b8a3e
-    {% elif level_cls == 'warn' %}#fff9db;border-left:5px solid #f08c00
-    {% elif level_cls == 'danger' %}#fff4e6;border-left:5px solid #e8590c
-    {% else %}#ffe3e3;border-left:5px solid #c92a2a{% endif %}">
+  <div style="margin-top:16px;padding:16px 18px;border-radius:var(--radius-card);background:
+    {% if level_cls == 'ok' %}var(--color-success-soft);border-left:5px solid var(--color-success)
+    {% elif level_cls == 'warn' %}var(--color-warn-soft);border-left:5px solid var(--color-warn)
+    {% elif level_cls == 'danger' %}var(--color-warn-soft);border-left:5px solid var(--color-warn)
+    {% else %}var(--color-error-soft);border-left:5px solid var(--color-error){% endif %}">
     <div style="font-weight:800;font-size:17px">
       {% if level_cls == 'ok' %}✅
       {% elif level_cls == 'warn' %}⚠️
@@ -41,7 +41,7 @@
       {% else %}🚨{% endif %}
       综合判定：{{ rec.level }}
     </div>
-    <p style="font-size:13.5px;color:#495057;margin:8px 0 0;line-height:1.7">
+    <p style="font-size:13.5px;color:var(--color-ink-2);margin:8px 0 0;line-height:1.7">
       95% 置信区间：θ ∈ [{{ '%.2f'|format(rec.theta - 1.96*rec.se) }}, {{ '%.2f'|format(rec.theta + 1.96*rec.se) }}]。
       {% if level_cls == 'ok' %}当前心理状态平稳，继续保持规律作息、运动与社交。
       {% elif level_cls == 'warn' %}存在轻度困扰，建议记录情绪日记、通过减压舱进行放松练习，必要时预约咨询师。
@@ -51,12 +51,12 @@
   </div>
 
   {% if rec.se > 0.30 %}
-  <!-- 精度说明（题库用尽但未达目标精度） -->
-  <div style="margin-top:12px;padding:12px 16px;border-radius:12px;background:#fff9db;border-left:5px solid #f08c00">
-    <div style="font-weight:700;font-size:13.5px;color:#996600">📐 关于本次测量精度的说明</div>
-    <p style="font-size:12.5px;color:#664d03;margin:6px 0 0;line-height:1.7">
+  <!-- 精度说明（未达目标精度） -->
+  <div style="margin-top:12px;padding:12px 16px;border-radius:var(--radius-card);background:var(--color-warn-soft);border-left:5px solid var(--color-warn)">
+    <div style="font-weight:700;font-size:13.5px;color:var(--color-warn)">📐 关于本次测量精度的说明</div>
+    <p style="font-size:12.5px;color:var(--color-warn);margin:6px 0 0;line-height:1.7">
       本次测评共作答 {{ rec.n_items }} 题，最终测量标准误 SE = {{ '%.2f'|format(rec.se) }}，略高于目标精度 0.30。
-      {% if rec.n_items >= scale.max_items %}这是因为标准量表题量有限（本题库共 {{ scale.max_items }} 题），在极端分数区间信息量不足，属于正常的测量学现象。{% endif %}
+      {% if rec.n_items >= scale.max_items %}这是因为标准量表在极端分数区间信息量有限，达到本次最多题数（{{ scale.max_items }} 题）后仍未把 SE 降到 0.30，属于正常的测量学现象。{% else %}这是因为剩余题目已无法提供更多有效信息，属于正常的测量学现象。{% endif %}
       本次结果仍可用于风险筛查与关注参考，但不宜作为精确诊断依据；如评分处于中高风险区间，建议结合完整量表复测或直接预约咨询师面谈。
     </p>
   </div>
@@ -64,21 +64,21 @@
 
   {% if dims %}
   <!-- SCL-90维度剖面 -->
-  <div class="card" style="margin-top:18px;box-shadow:none;background:#fafbfc">
+  <div class="card" style="margin-top:18px;box-shadow:none;background:var(--color-paper-2)">
     <h3 style="margin-top:0">🧩 维度剖面（各因子 θ 估计）</h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
       {% for d, info in dims.items() %}
-      <div style="padding:10px 12px;background:#fff;border-radius:10px;border:1px solid #e9ecef">
+      <div style="padding:10px 12px;background:var(--color-cotton);border-radius:var(--radius-card);border:1px solid var(--color-paper-2)">
         <div style="display:flex;justify-content:space-between;font-size:13px">
           <b>{{ d }}</b>
-          <span style="color:{{ '#c92a2a' if info.theta >= 0.5 else ('#f08c00' if info.theta >= 0 else '#2b8a3e') }}">
+          <span style="color:{{ 'var(--color-error)' if info.theta >= 0.5 else ('var(--color-warn)' if info.theta >= 0 else 'var(--color-success)') }}">
             {{ '%+.2f'|format(info.theta) }}
           </span>
         </div>
-        <div style="height:6px;background:#f1f3f5;border-radius:3px;margin-top:6px;overflow:hidden">
-          <div style="height:100%;width:{{ [ (info.theta+3)/6*100, 5, 100 ] | max if info.theta>=0 else 5 }}%;background:{{ '#c92a2a' if info.theta >= 0.5 else ('#f08c00' if info.theta >= 0 else '#2b8a3e') }}"></div>
+        <div style="height:6px;background:var(--color-paper-2);border-radius:var(--radius-input);margin-top:6px;overflow:hidden">
+          <div style="height:100%;width:{{ [ (info.theta+3)/6*100, 5, 100 ] | max if info.theta>=0 else 5 }}%;background:{{ 'var(--color-error)' if info.theta >= 0.5 else ('var(--color-warn)' if info.theta >= 0 else 'var(--color-success)') }}"></div>
         </div>
-        <div style="font-size:11.5px;color:#adb5bd;margin-top:4px">{{ info.n }} 题 · SE {{ '%.2f'|format(info.se) }}</div>
+        <div style="font-size:11.5px;color:var(--color-muted);margin-top:4px">{{ info.n }} 题 · SE {{ '%.2f'|format(info.se) }}</div>
       </div>
       {% endfor %}
     </div>
@@ -87,12 +87,12 @@
 
   <!-- 作答明细 -->
   <details style="margin-top:14px">
-    <summary style="cursor:pointer;color:#1971c2;font-size:13.5px">📝 查看本次作答明细（{{ responses|length }} 题）</summary>
+    <summary style="cursor:pointer;color:var(--color-accent-2);font-size:13.5px">📝 查看本次作答明细（{{ responses|length }} 题）</summary>
     <div style="margin-top:10px;max-height:280px;overflow-y:auto">
       {% for r in responses %}
-      <div style="padding:8px 10px;border-bottom:1px dashed #e9ecef;font-size:13px">
+      <div style="padding:8px 10px;border-bottom:1px dashed var(--color-paper-2);font-size:13px">
         <b>#{{ loop.index }}</b> {{ r.stem }}
-        <span style="float:right;color:#5f3dc4;font-weight:600">得分 {{ r.score }}</span>
+        <span style="float:right;color:var(--color-ink);font-weight:600">得分 {{ r.score }}</span>
       </div>
       {% endfor %}
     </div>
@@ -103,7 +103,7 @@
     <a class="btn btn-mint" href="{{ url_for('booking') }}">预约咨询师聊聊 →</a>
     <a class="btn" href="{{ url_for('irt_history') }}">我的测评历史</a>
   </div>
-  <p style="font-size:12px;color:#adb5bd;margin-top:14px">
+  <p style="font-size:12px;color:var(--color-muted);margin-top:14px">
     本报告基于项目反应理论（GRM）EAP 估计生成，参数为演示标定值，正式临床使用需大样本重标定。
   </p>
 </div>

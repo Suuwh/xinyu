@@ -29,7 +29,7 @@
           <span>学信网账号登录</span>
         </button>
       </form>
-      <p style="margin-top:14px;font-size:13px;color:#adb5bd;text-align:center">
+      <p style="margin-top:14px;font-size:13px;color:var(--color-muted);text-align:center">
         还没有账号？<a href="{{ url_for('register') }}">立即注册学生账号</a><br>
         演示学生 <b>student1 / 123456</b>
       </p>
@@ -48,8 +48,8 @@
       </form>
       <div class="auth-divider"><span>执业资质认证登录</span></div>
       <form method="post" action="{{ url_for('login_cps') }}">
-        <button type="button" class="chsi-btn" id="cps-show" style="border-color:#4263eb;color:#3b5bdb">
-          <span class="chsi-logo" style="background:#4263eb">认</span>
+        <button type="button" class="chsi-btn" id="cps-show" style="border-color:var(--color-accent-2);color:var(--color-accent-2)">
+          <span class="chsi-logo" style="background:var(--color-accent-2)">认</span>
           <span>中国心理学会注册系统认证登录</span>
         </button>
         <div class="cps-panel" id="cps-panel" style="display:none">
@@ -57,7 +57,7 @@
           <input type="text" name="cps_account" placeholder="例如 138****1234 或 name@mail.com" required>
           <label class="f">注册心理师 / 助理心理师编号</label>
           <input type="text" name="cps_no" placeholder="例如 X-22-001、C-99-015" required>
-          <div style="font-size:12px;color:#868e96;line-height:1.7;margin:8px 0 12px">
+          <div style="font-size:12px;color:var(--color-muted);line-height:1.7;margin:8px 0 12px">
             演示环境为「模拟认证」：系统将校验编号格式，并匹配本平台已认证咨询师档案后放行登录。<br>
             正式部署时对接
             <a href="https://www.chinacpb.org/" target="_blank" rel="noopener">中国心理学会临床与咨询心理学注册系统</a> 官方认证接口。
@@ -65,7 +65,7 @@
           <button class="btn" style="width:100%">通过注册系统认证登录</button>
         </div>
       </form>
-      <p style="margin-top:14px;font-size:13px;color:#adb5bd;text-align:center">
+      <p style="margin-top:14px;font-size:13px;color:var(--color-muted);text-align:center">
         还不是认证咨询师？<a href="{{ url_for('register') }}">查看咨询师注册要求</a><br>
         演示咨询师 <b>counselor / 123456</b>（注册编号 X-22-001）
       </p>
@@ -74,20 +74,20 @@
 </div>
 <style>
 .auth-card{max-width:420px;margin:0 auto}
-.auth-divider{display:flex;align-items:center;text-align:center;color:#adb5bd;font-size:12px;margin:18px 0 14px}
-.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:#e9ecef}
+.auth-divider{display:flex;align-items:center;text-align:center;color:var(--color-muted);font-size:12px;margin:18px 0 14px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--color-paper-2)}
 .auth-divider span{padding:0 12px}
-.login-tabs{display:flex;background:#f1f3f5;border-radius:12px;padding:4px;margin-bottom:18px}
-.ltab{flex:1;padding:9px 0;border:none;background:transparent;border-radius:9px;font-size:14px;font-weight:700;color:#868e96;cursor:pointer;transition:.15s}
-.ltab.active{background:#fff;color:#ff6b6b;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-.chsi-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;border:1.5px solid #2b6cb0;border-radius:12px;background:#fff;color:#1a4f8b;font-size:14.5px;font-weight:700;cursor:pointer;transition:.15s}
-.chsi-btn:hover{background:#f0f6ff}
-.chsi-logo{width:24px;height:24px;border-radius:6px;background:#2b6cb0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
-.cps-panel{margin-top:12px;padding:14px;border:1.5px solid #dbe4ff;border-radius:12px;background:#f8faff}
-.cps-panel input{width:100%;padding:10px 12px;border:1px solid #d0d8e8;border-radius:10px;font-size:14px;margin-bottom:10px}
-.cps-panel input:focus{outline:none;border-color:#4263eb}
-.remember{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:12.5px;color:#868e96;cursor:pointer;user-select:none}
-.remember input{width:auto;accent-color:#ff6b6b;margin:0}
+.login-tabs{display:flex;background:var(--color-paper-2);border-radius:var(--radius-card);padding:4px;margin-bottom:18px}
+.ltab{flex:1;padding:9px 0;border:none;background:transparent;border-radius:var(--radius-card);font-size:14px;font-weight:700;color:var(--color-muted);cursor:pointer;transition:.15s}
+.ltab.active{background:var(--grad-btn);color:var(--color-accent-ink);box-shadow:0 4px 12px rgba(232,137,12,.35)}
+.chsi-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:11px;border:1.5px solid var(--color-ink);border-radius:var(--radius-card);background:var(--color-cotton);color:var(--color-ink);font-size:14.5px;font-weight:700;cursor:pointer;transition:.15s}
+.chsi-btn:hover{background:var(--color-paper-2)}
+.chsi-logo{width:24px;height:24px;border-radius:var(--radius-input);background:var(--color-ink);color:var(--color-cotton);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+.cps-panel{margin-top:12px;padding:14px;border:1.5px solid var(--color-paper-2);border-radius:var(--radius-card);background:var(--color-paper-2)}
+.cps-panel input{width:100%;padding:10px 12px;border:1px solid var(--color-paper-2);border-radius:var(--radius-card);font-size:14px;margin-bottom:10px}
+.cps-panel input:focus{outline:none;border-color:var(--color-accent-2)}
+.remember{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:12.5px;color:var(--color-muted);cursor:pointer;user-select:none}
+.remember input{width:auto;accent-color:var(--color-error);margin:0}
 </style>
 <script>
 (function () {

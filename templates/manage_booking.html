@@ -7,17 +7,24 @@
     <p>点击任意预约，可在右侧查看该学生的完整心理档案</p>
   </div>
 
-  <!-- 暂停预约开关 -->
-  <div class="card mb-pause">
+  <!-- 暂停预约开关：开启/暂停两态在标题、表情、按钮色上明确区分 -->
+  <div class="card mb-pause {{ 'mb-state--pause' if is_pausing else 'mb-state--open' }}">
     <div style="flex:1">
-      <h3 style="margin:0;font-size:15.5px">🛑 暂停预约</h3>
-      <p style="font-size:13px;color:#868e96;margin-top:5px">
-        {{ '暂停中：学生端将不再显示你的信息，也无法向你提交预约。' if is_pausing else '开启后，学生端将立即停止显示你的信息与预约入口。' }}
+      {% if is_pausing %}
+      <h3 style="margin:0;font-size:15.5px">⏸ 预约已暂停</h3>
+      <p style="font-size:13px;color:var(--color-muted);margin-top:5px">
+        暂停中：学生端将不再显示你的信息，也无法向你提交预约。
       </p>
+      {% else %}
+      <h3 style="margin:0;font-size:15.5px">🟢 预约开启中</h3>
+      <p style="font-size:13px;color:var(--color-muted);margin-top:5px">
+        当前学生可正常查看你的信息并提交预约；点击右侧按钮可暂停。
+      </p>
+      {% endif %}
     </div>
     <form method="post" action="{{ url_for('manage_booking_pause') }}">
-      <button class="btn {{ 'btn-danger' if not is_pausing else 'btn-mint' }}" type="submit">
-        {{ '恢复预约' if is_pausing else '暂停预约' }}
+      <button class="btn {{ 'btn-mint' if is_pausing else 'btn-gold' }}" type="submit">
+        {{ '▶ 恢复预约' if is_pausing else '⏸ 暂停预约' }}
       </button>
     </form>
   </div>
@@ -47,7 +54,7 @@
       </div>
       {% if r.status in ['pending','confirmed'] %}
       <div class="mb-row-actions" onclick="event.stopPropagation()">
-        <button type="button" class="btn btn-sm btn-sky mb-act" data-aid="{{ r.id }}" data-action="confirmed"
+        <button type="button" class="btn btn-sm mb-act" data-aid="{{ r.id }}" data-action="confirmed"
                 data-stu="{{ st.real_name or st.username }}" data-time="{{ r.date }} {{ r.time_slot }}">确认</button>
         <button type="button" class="btn btn-sm btn-mint mb-act" data-aid="{{ r.id }}" data-action="done"
                 data-stu="{{ st.real_name or st.username }}" data-time="{{ r.date }} {{ r.time_slot }}">完成</button>
@@ -56,7 +63,7 @@
       </div>
       {% endif %}
     </div>
-    {% else %}<p style="color:#adb5bd;padding:20px">暂无学生预约。</p>{% endfor %}
+    {% else %}<p style="color:var(--color-muted);padding:20px">暂无学生预约。</p>{% endfor %}
   </div>
 </div>
 
@@ -109,7 +116,7 @@ function closeCfm(){cfmMask.style.display='none';cfmBox.style.display='none';}
 document.getElementById('cfmNo').onclick=closeCfm;
 cfmMask.onclick=closeCfm;
 const ACT_CONF={
-  confirmed:{icon:'✅',title:'确认接受这条预约？',btn:'确认接受预约',cls:'btn-sky',
+  confirmed:{icon:'✅',title:'确认接受这条预约？',btn:'确认接受预约',cls:'',
     desc:'确认后该预约将标记为「已确认」并进入待咨询安排，学生端会同步看到确认状态。请确认该时间与地点你可以正常接待。'},
   done:{icon:'🎉',title:'将这条预约标记为已完成？',btn:'确认已完成',cls:'btn-mint',
     desc:'请确认本次咨询确已结束。标记为「已完成」后将作为咨询记录归档，通常不再恢复。'},
@@ -194,59 +201,59 @@ document.querySelectorAll('.mb-row').forEach(row=>{
 
 <style>
 .mb-page{max-width:900px;margin:0 auto}
-.mb-pause{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border:1px solid #d0ebff;background:#f0f8ff}
-.btn-danger{background:#fa5252}
-.btn-danger:hover{background:#e03131}
+.mb-pause{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border:1px solid var(--color-rule);background:var(--color-cotton)}
+.mb-state--open{border-left:4px solid var(--color-mint)}
+.mb-state--pause{border-left:4px solid var(--color-warn)}
 .mb-list{padding:10px 14px}
-.mb-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid #eef2f7;margin-bottom:10px;cursor:pointer;transition:.15s}
-.mb-row:hover{border-color:#74c0fc;background:#f7fbff;box-shadow:0 4px 14px rgba(28,109,217,.08)}
+.mb-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;border-radius:var(--radius-card);border:1px solid var(--color-paper-2);margin-bottom:10px;cursor:pointer;transition:.15s}
+.mb-row:hover{border-color:var(--color-accent);background:var(--color-paper-2);box-shadow:0 4px 14px rgba(var(--rgb-shadow),.08)}
 .mb-row-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-.mb-av{font-size:26px;width:40px;height:40px;border-radius:50%;background:#e7f1ff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.mb-av{font-size:26px;width:40px;height:40px;border-radius:50%;background:var(--color-paper-2);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .mb-av-img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0}
-.mb-name{font-size:15px;color:#343a40}
-.mb-row-info{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:#666;padding-left:4px}
-.mb-go{color:#1c6dd9;font-weight:600;margin-left:auto}
+.mb-name{font-size:15px;color:var(--color-ink)}
+.mb-row-info{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--color-ink-2);padding-left:4px}
+.mb-go{color:var(--color-ink);font-weight:600;margin-left:auto}
 .mb-row-actions{display:flex;gap:6px;flex-shrink:0}
 /* 抽屉 */
-.drawer-mask{position:fixed;inset:0;background:rgba(20,40,70,.4);opacity:0;visibility:hidden;transition:.25s;z-index:90}
+.drawer-mask{position:fixed;inset:0;background:transparent;opacity:0;visibility:hidden;transition:.25s;z-index:90}
 .drawer-mask.show{opacity:1;visibility:visible}
-.drawer{position:fixed;top:0;right:0;height:100vh;width:min(520px,92vw);background:#f5f8fc;box-shadow:-8px 0 30px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .28s ease;z-index:100;display:flex;flex-direction:column}
+.drawer{position:fixed;top:0;right:0;height:100vh;width:min(520px,92vw);background:var(--color-paper-2);box-shadow:-8px 0 30px rgba(var(--rgb-shadow),.15);transform:translateX(100%);transition:transform .28s ease;z-index:100;display:flex;flex-direction:column}
 .drawer.open{transform:translateX(0)}
-.drawer-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;background:linear-gradient(120deg,#1c6dd9,#15aabf);color:#fff;flex-shrink:0}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;background:var(--grad-btn);color:var(--color-accent-ink);flex-shrink:0}
 .drawer-head h3{font-size:17px;font-weight:800}
-.drawer-close{cursor:pointer;font-size:18px;opacity:.9;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px}
-.drawer-close:hover{background:rgba(255,255,255,.2)}
+.drawer-close{cursor:pointer;font-size:18px;opacity:.9;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-card)}
+.drawer-close:hover{background:rgba(255,255,255,.22)}
 .drawer-body{padding:18px 20px;overflow-y:auto;flex:1}
-.drawer-loading{text-align:center;color:#adb5bd;padding:60px 0}
-.dz-profile{display:flex;align-items:center;gap:14px;background:#fff;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 3px 10px rgba(28,109,217,.06)}
-.dz-av{width:60px;height:60px;border-radius:50%;background:#e7f1ff;display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden}
+.drawer-loading{text-align:center;color:var(--color-muted);padding:60px 0}
+.dz-profile{display:flex;align-items:center;gap:14px;background:var(--color-cotton);border-radius:var(--radius-card);padding:18px;margin-bottom:14px;box-shadow:0 3px 10px rgba(var(--rgb-shadow),.06)}
+.dz-av{width:60px;height:60px;border-radius:50%;background:var(--color-paper-2);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden}
 .dz-av-img{width:100%;height:100%;object-fit:cover}
-.dz-profile h3{font-size:19px;color:#1c3d6e;margin-bottom:4px}
-.dz-profile p{font-size:13px;color:#868e96}
-.dz-sec{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(28,109,217,.05)}
-.dz-sec h4{font-size:14.5px;color:#1c3d6e;margin-bottom:10px;font-weight:800}
+.dz-profile h3{font-size:19px;color:var(--color-board);margin-bottom:4px}
+.dz-profile p{font-size:13px;color:var(--color-muted)}
+.dz-sec{background:var(--color-cotton);border-radius:var(--radius-card);padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(var(--rgb-shadow),.05)}
+.dz-sec h4{font-size:14.5px;color:var(--color-board);margin-bottom:10px;font-weight:800}
 .dz-tbl{width:100%;border-collapse:collapse;font-size:13px}
-.dz-tbl td{padding:7px 6px;border-bottom:1px solid #f1f4f8;color:#343a40;vertical-align:top}
-.dz-tbl td:nth-child(odd){color:#868e96;width:18%;white-space:nowrap}
-.dz-list th{font-size:12px;color:#868e96;text-align:left;padding:6px;border-bottom:2px solid #eef2f7;font-weight:600}
+.dz-tbl td{padding:7px 6px;border-bottom:1px solid var(--color-paper-2);color:var(--color-ink);vertical-align:top}
+.dz-tbl td:nth-child(odd){color:var(--color-muted);width:18%;white-space:nowrap}
+.dz-list th{font-size:12px;color:var(--color-muted);text-align:left;padding:6px;border-bottom:2px solid var(--color-paper-2);font-weight:600}
 .dz-list td{font-size:12.5px}
-.dz-st{background:#e7f5ff;color:#1971c2;border-radius:8px;padding:2px 8px;font-size:11.5px;white-space:nowrap}
-.dz-empty{color:#adb5bd;text-align:center;padding:14px;font-size:13px}
-.dz-alert{display:flex;justify-content:space-between;gap:10px;background:#fff9db;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px}
-.dz-alert.hi{background:#fff0f0}
-.dz-alert p{color:#666;font-size:12.5px;margin:4px 0;line-height:1.6}
-.dz-alert small{color:#868e96}
-.dz-alert-time{font-size:11.5px;color:#adb5bd;white-space:nowrap}
-.dz-tree{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f4f8;font-size:13px}
-.dz-tree b{flex:1;color:#343a40;font-weight:600}
-.dz-tree small{color:#adb5bd;font-size:12px}
-.dz-flag{background:#fa5252;color:#fff;border-radius:6px;padding:1px 7px;font-size:11px}
+.dz-st{background:var(--color-paper-2);color:var(--color-accent-2);border-radius:var(--radius-card);padding:2px 8px;font-size:11.5px;white-space:nowrap}
+.dz-empty{color:var(--color-muted);text-align:center;padding:14px;font-size:13px}
+.dz-alert{display:flex;justify-content:space-between;gap:10px;background:var(--color-warn-soft);border-radius:var(--radius-card);padding:10px 12px;margin-bottom:8px;font-size:13px}
+.dz-alert.hi{background:var(--color-error-soft)}
+.dz-alert p{color:var(--color-ink-2);font-size:12.5px;margin:4px 0;line-height:1.6}
+.dz-alert small{color:var(--color-muted)}
+.dz-alert-time{font-size:11.5px;color:var(--color-muted);white-space:nowrap}
+.dz-tree{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--color-paper-2);font-size:13px}
+.dz-tree b{flex:1;color:var(--color-ink);font-weight:600}
+.dz-tree small{color:var(--color-muted);font-size:12px}
+.dz-flag{background:var(--color-error);color:var(--color-cotton);border-radius:var(--radius-input);padding:1px 7px;font-size:11px}
 /* 取消确认弹窗 */
-.confirm-mask{position:fixed;inset:0;background:rgba(20,40,70,.45);display:none;z-index:120}
-.confirm-box{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);width:min(400px,92vw);background:#fff;border-radius:18px;padding:26px 26px 22px;display:none;z-index:130;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.confirm-mask{position:fixed;inset:0;background:rgba(35,48,66,.42);display:none;z-index:120}
+.confirm-box{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);width:min(400px,92vw);background:var(--color-cotton);border-radius:var(--radius-card);padding:26px 26px 22px;display:none;z-index:130;text-align:center;box-shadow:0 18px 50px rgba(var(--rgb-shadow),.2)}
 .cfm-icon{font-size:34px;margin-bottom:10px}
-.confirm-box h3{font-size:17px;color:#343a40;margin:0 0 10px}
-.confirm-box p{font-size:13.5px;color:#868e96;line-height:1.8;margin:0 0 20px;text-align:left}
+.confirm-box h3{font-size:17px;color:var(--color-ink);margin:0 0 10px}
+.confirm-box p{font-size:13.5px;color:var(--color-muted);line-height:1.8;margin:0 0 20px;text-align:left}
 .cfm-actions{display:flex;gap:10px;justify-content:center}
 .cfm-actions form{margin:0}
 .cfm-actions .btn{padding:10px 22px}

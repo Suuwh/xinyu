@@ -4,40 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}心隅 · 阳光心理健康平台{% endblock %}</title>
-<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+<meta name="description" content="心隅是面向校园的心理健康平台，提供心理测评、情绪日记、匿名树洞、AI倾诉与在线咨询预约，陪伴你记录和照顾自己的情绪。">
+<link href="{{ url_for('static', filename='css/style.css') }}?v=20261111e" rel="stylesheet">
 {% block head %}{% endblock %}
 </head>
-<body>
+<body class="{% if u %}{% if u.role == 'counselor' %}theme-teacher{% else %}theme-student{% endif %}{% endif %}">
+<a class="skip" href="#main-content">跳至主要内容</a>
 <nav class="topnav">
   <div class="nav-inner">
-    <a class="brand" href="{{ url_for('index') }}">🌊 心隅</a>
-    <div class="nav-links">
+    <a class="brand" href="{{ url_for('index') }}">☀️ 心隅</a>
+    <div class="nav-links{% if not u %} nav-links--guest{% endif %}">
       {% if u %}
+        {% set ep = request.endpoint or '' %}
         {% if u.role == 'student' %}
-          <a href="{{ url_for('index') }}">首页</a>
-          <a href="{{ url_for('assessments') }}">心理测评</a>
-          <a href="{{ url_for('treehole') }}">匿名树洞</a>
-          <a href="{{ url_for('mood') }}">情绪日记</a>
-          <a href="{{ url_for('relax') }}">减压舱</a>
-          <a href="{{ url_for('booking') }}">预约咨询</a>
-          <a href="{{ url_for('learn') }}">心理成长</a>
-          <a href="{{ url_for('chat') }}">AI倾诉</a>
-          <a href="{{ url_for('rag_chat_page') }}" title="私密心聊：端侧离线·数据不出本机的一对一私人AI心理咨询">私密心聊</a>
+          <a href="{{ url_for('index') }}" {% if ep == 'index' %}class="active"{% endif %}>首页</a>
+          <a href="{{ url_for('assessments') }}" {% if ep in ('assessments','history','my_assessments','take','result','irt_home','irt_take','irt_result') %}class="active"{% endif %}>心理测评</a>
+          <a href="{{ url_for('treehole') }}" {% if ep == 'treehole' %}class="active"{% endif %}>匿名树洞</a>
+          <a href="{{ url_for('mood') }}" {% if ep == 'mood' %}class="active"{% endif %}>情绪日记</a>
+          <a href="{{ url_for('relax') }}" {% if ep in ('relax','breath','grounding','mindful','pmr') %}class="active"{% endif %}>减压舱</a>
+          <a href="{{ url_for('booking') }}" {% if ep in ('booking','my_booking') %}class="active"{% endif %}>预约咨询</a>
+          <a href="{{ url_for('learn') }}" {% if ep in ('learn','learn_post','learn_all') %}class="active"{% endif %}>心理成长</a>
+          <a href="{{ url_for('chat') }}" {% if ep == 'chat' %}class="active"{% endif %}>AI倾诉</a>
+          <a href="{{ url_for('rag_chat_page') }}" {% if ep == 'rag_chat_page' %}class="active"{% endif %} title="私密心聊：端侧离线·数据不出本机的一对一私人AI心理咨询">私密心聊</a>
         {% else %}
-          <a href="{{ url_for('teacher_home') }}">首页</a>
-          <a href="{{ url_for('dash') }}">数据看板</a>
-          <a href="{{ url_for('alerts') }}">预警工单</a>
-          <a href="{{ url_for('manage_booking') }}">预约管理</a>
-          <a href="{{ url_for('teacher_treehole') }}">学生树洞</a>
-          <a href="{{ url_for('teacher_news') }}">心理资讯</a>
-          <a href="{{ url_for('teacher_journal') }}">心理月刊</a>
-          <a href="{{ url_for('chat') }}">AI倾诉</a>
+          <a href="{{ url_for('teacher_home') }}" {% if ep == 'teacher_home' %}class="active"{% endif %}>首页</a>
+          <a href="{{ url_for('dash') }}" {% if ep == 'dash' %}class="active"{% endif %}>数据看板</a>
+          <a href="{{ url_for('alerts') }}" {% if ep == 'alerts' %}class="active"{% endif %}>预警工单</a>
+          <a href="{{ url_for('manage_booking') }}" {% if ep == 'manage_booking' %}class="active"{% endif %}>预约管理</a>
+          <a href="{{ url_for('teacher_treehole') }}" {% if ep == 'teacher_treehole' %}class="active"{% endif %}>学生树洞</a>
+          <a href="{{ url_for('teacher_news') }}" {% if ep in ('teacher_news','teacher_news_all','teacher_news_search') %}class="active"{% endif %}>心理资讯</a>
+          <a href="{{ url_for('teacher_journal') }}" {% if ep in ('teacher_journal','journal_all','journal_search') %}class="active"{% endif %}>心理月刊</a>
+          <a href="{{ url_for('chat') }}" {% if ep == 'chat' %}class="active"{% endif %}>AI倾诉</a>
         {% endif %}
         <a class="nav-user" href="{{ url_for('profile') }}" title="个人信息"><span class="nav-avatar-wrap">{{ avatar_html(u, cls="nav-avatar") | safe }}</span> {{ u.real_name or u.username }}</a>
         <a href="{{ url_for('logout') }}">退出</a>
       {% else %}
-        <a href="{{ url_for('login') }}">登录</a>
-        <a href="{{ url_for('register') }}">注册</a>
+        <a href="{{ url_for('login') }}" {% if ep == 'login' %}class="active"{% endif %}>登录</a>
+        <a href="{{ url_for('register') }}" {% if ep == 'register' %}class="active"{% endif %}>注册</a>
       {% endif %}
     </div>
   </div>
@@ -51,8 +54,16 @@
   {% endif %}
 {% endwith %}
 
-<main class="container">{% block body %}{% endblock %}</main>
+<main class="container" id="main-content">{% block body %}{% endblock %}</main>
 
-<footer class="footer">心隅 · AI校园心理健康平台 · 本平台结果不能替代专业医疗诊断 · 24h危机热线 400-161-9995</footer>
+<footer class="footer">☀️ 心隅 · AI校园心理健康平台 · 本平台结果不能替代专业医疗诊断 · 24h危机热线 400-161-9995</footer>
+<script>
+(function(){
+  function ready(){ document.body.classList.add('anim-ready'); }
+  /* 安全兜底：入场动画最长约 0.77s，若动画时间线异常未播放，900ms 后强制显现，避免内容停留在透明态 */
+  setTimeout(ready, 900);
+  window.addEventListener('pageshow', function(e){ if(e.persisted) ready(); });
+})();
+</script>
 </body>
 </html>

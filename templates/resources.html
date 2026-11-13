@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}心理科普 · 心隅{% endblock %}
 {% block body %}
-<h2 style="color:#0e4d6e;margin-bottom:14px">心理科普知识库</h2>
+<h2 style="color:var(--color-board);margin-bottom:14px">心理科普知识库</h2>
 {% for r in rows %}
 <div class="card">
   <h3>{{ r.title }} <span class="tag">{{ r.category }}</span></h3>
-  <p style="font-size:14px;color:#46586a">{{ r.summary }}</p>
+  <p style="font-size:14px;color:var(--color-ink-2)">{{ r.summary }}</p>
   <details style="margin-top:8px">
-    <summary style="font-size:13px;color:#1d8aa8;cursor:pointer">展开阅读</summary>
+    <summary style="font-size:13px;color:var(--color-accent-2);cursor:pointer">展开阅读</summary>
     <p style="font-size:14px;margin-top:8px;white-space:pre-wrap">{{ r.content }}</p>
   </details>
 </div>

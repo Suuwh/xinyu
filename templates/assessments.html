@@ -7,20 +7,20 @@
 </div>
 
 <div style="max-width:1100px;margin:10px auto;display:flex;justify-content:flex-end">
-  <a class="btn" href="{{ url_for('my_assessments') }}" style="background:#fff;border:1.5px solid #5f3dc4;color:#5f3dc4">📂 我的测评记录 →</a>
+  <a class="btn" href="{{ url_for('my_assessments') }}" style="background:var(--color-cotton);border:1.5px solid var(--color-ink);color:var(--color-ink)">📂 我的测评记录 →</a>
 </div>
 
 <!-- IRT自适应测评入口 -->
-<div class="card" style="background:linear-gradient(120deg,#f3f0ff,#e7f5ff);border:1px solid #d0bfff">
+<div class="card" style="background:var(--color-paper-2);border:1px solid var(--color-paper-2)">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
-      <h2 style="margin:0;color:#5f3dc4">🎯 IRT 自适应心理测评（新模式）</h2>
-      <p style="margin:8px 0 0;color:#495057;font-size:14px;line-height:1.6">
+      <h2 style="margin:0;color:var(--color-ink)">🎯 IRT 自适应心理测评（新模式）</h2>
+      <p style="margin:8px 0 0;color:var(--color-ink-2);font-size:14px;line-height:1.6">
         基于项目反应理论，根据你的作答实时调整题目，少做题、测得准。
         支持 <b>SCL-90</b>（9 因子 90 题自适应）、<b>SAS</b> 焦虑、<b>SDS</b> 抑郁。
       </p>
     </div>
-    <a class="btn" href="{{ url_for('irt_home') }}" style="background:#5f3dc4;color:#fff">进入自适应测评 →</a>
+    <a class="btn" href="{{ url_for('irt_home') }}">进入自适应测评 →</a>
   </div>
 </div>
 
@@ -35,7 +35,7 @@
         <span class="tag tag-blue">{{ sc.questions|length }}题</span>
         <span class="tag">约{{ sc.get('duration', 5) }}分钟</span>
       </div>
-      <p style="font-size:13px;color:#868e96;line-height:1.6">{{ sc.desc }}</p>
+      <p style="font-size:13px;color:var(--color-muted);line-height:1.6">{{ sc.desc }}</p>
       <div style="margin-top:10px">
         {% if history[code] %}
           <span class="tag tag-orange">已测 {{ history[code].level }}</span>

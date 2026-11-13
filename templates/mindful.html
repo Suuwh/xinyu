@@ -3,10 +3,10 @@
 {% block body %}
 <div class="card" style="max-width:720px;margin:0 auto;text-align:center">
   <h2>🌿 正念身体扫描</h2>
-  <p style="color:#868e96;font-size:14px">闭上眼睛，把注意力像一束光，从头顶慢慢扫到脚底。只是觉察，不评判、不改变。</p>
-  <div id="part" style="font-size:24px;font-weight:700;color:#1971c2;margin:30px 0 10px">点击开始</div>
-  <div id="tip" style="font-size:15px;color:#495057;min-height:48px;max-width:520px;margin:0 auto;line-height:1.8"></div>
-  <div id="timer" style="font-size:14px;color:#868e96;margin-top:10px"></div>
+  <p style="color:var(--color-muted);font-size:14px">闭上眼睛，把注意力像一束光，从头顶慢慢扫到脚底。只是觉察，不评判、不改变。</p>
+  <div id="part" style="font-size:24px;font-weight:700;color:var(--color-accent-2);margin:30px 0 10px">点击开始</div>
+  <div id="tip" style="font-size:15px;color:var(--color-ink-2);min-height:48px;max-width:520px;margin:0 auto;line-height:1.8"></div>
+  <div id="timer" style="font-size:14px;color:var(--color-muted);margin-top:10px"></div>
   <div style="display:flex;gap:12px;justify-content:center;margin-top:18px">
     <button class="btn" id="go">开始扫描</button>
     <a class="btn btn-ghost" href="{{ url_for('relax') }}">返回减压舱</a>

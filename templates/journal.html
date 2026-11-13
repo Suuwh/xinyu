@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 {% block title %}心理月刊 · 心隅教师端{% endblock %}
 {% block body %}
-<div class="hero-banner" style="background:linear-gradient(120deg,#1c6dd9,#15aabf)">
+<div class="hero-banner hero-banner--dark">
   <h1>📚 《心理月刊》最新目录</h1>
   <p>精选最新一期学术论文，为教学与科研提供前沿参考。</p>
   <p style="font-size:12px;opacity:.9;margin-top:6px">更新于 {{ news_t }} ·
-    {% if online %}<span style="color:#d3f9d8">● 实时在线</span>{% else %}<span style="color:#ffe8cc">● 离线精选</span>{% endif %}
+    {% if online %}<span style="color:var(--color-success-soft)">● 实时在线</span>{% else %}<span style="color:var(--color-warn)">● 离线精选</span>{% endif %}
   </p>
 </div>
-<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+<div class="inline-form" style="margin-bottom:14px">
   <a class="btn" href="{{ url_for('teacher_journal_all') }}">📚 往期目录</a>
-  <form method="get" action="{{ url_for('teacher_journal_search') }}" style="display:flex;gap:8px;align-items:center;flex:1;min-width:220px;max-width:520px">
-    <input type="text" name="q" placeholder="🔍 搜索论文（先站内，无结果自动引导公网检索）…" style="flex:1;padding:9px 14px;border:1px solid #e0e6ed;border-radius:10px;font-size:14px">
+  <form method="get" action="{{ url_for('teacher_journal_search') }}" class="inline-form" style="flex:1;min-width:220px;max-width:520px">
+    <input type="text" name="q" placeholder="🔍 搜索论文（先站内，无结果自动引导公网检索）…" style="flex:1">
     <button class="btn btn-sm">搜索</button>
   </form>
   <a class="btn btn-ghost" href="https://www.xlykzz.com/CN/home" target="_blank" rel="noopener">期刊官网 ↗</a>
 </div>
 <div class="card">
   {% for it in items %}
-  <div style="padding:14px 0;border-bottom:1px solid #fff1e6">
-    <a href="{{ it.url }}" target="_blank" rel="noopener" style="font-size:15px;font-weight:600;color:#343a40">{{ it.title }}</a>
-    <div style="font-size:12px;color:#868e96;margin-top:4px">{{ it.meta }}</div>
+  <div style="padding:14px 0;border-bottom:1px solid var(--color-warn-soft)">
+    <a href="{{ it.url }}" target="_blank" rel="noopener" style="font-size:15px;font-weight:600;color:var(--color-ink)">{{ it.title }}</a>
+    <div style="font-size:12px;color:var(--color-muted);margin-top:4px">{{ it.meta }}</div>
   </div>
   {% endfor %}
-  <p style="margin-top:10px;font-size:12px;color:#adb5bd">来源：心理月刊 xlykzz.com · 点击查看原文与摘要</p>
+  <p style="margin-top:10px;font-size:12px;color:var(--color-muted)">来源：心理月刊 xlykzz.com · 点击查看原文与摘要</p>
 </div>
 {% endblock %}
