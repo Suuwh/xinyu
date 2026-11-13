@@ -212,6 +212,23 @@ class RAGMessage(db.Model):
     content = db.Column(db.Text)
     crisis = db.Column(db.Boolean, default=False)   #是否高危回复
     sources = db.Column(db.String(256), default="")   #引用知识库
+    emotion = db.Column(db.Text, default="")        #本条用户消息的情绪占比json
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+
+#文本情绪筛查记录（脱敏存储）
+class EmotionScreenLog(db.Model):
+    __tablename__ = "emotion_screen_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    session_id = db.Column(db.Integer, nullable=True)
+    masked_text = db.Column(db.String(128), default="")   #脱敏后的文本片段
+    risk_level = db.Column(db.String(16), default="safe")  #high/watch/safe
+    risk_score = db.Column(db.Float, default=0.0)
+    dominant_emotion = db.Column(db.String(16), default="")
+    emotions = db.Column(db.Text, default="")             #六类情绪占比json
+    crisis_labels = db.Column(db.String(128), default="")
+    by_keyword = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 
