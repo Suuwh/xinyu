@@ -8,6 +8,7 @@ import uuid
 import engine
 import engine_irt
 import rag_counselor
+import emotion_screen
 import news
 import scale_meta
 from datetime import datetime, timedelta
@@ -16,7 +17,7 @@ from flask import (Flask, render_template, request, redirect, url_for,session, j
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_ as sa_or
 from models import db, User, Counselor, Assessment, ChatSession, ChatMessage, Alert, TreePost, TreeComment, Appointment, \
-Resource, MoodDiary, IRTTest, RAGSession, RAGMessage
+Resource, MoodDiary, IRTTest, RAGSession, RAGMessage, EmotionScreenLog
 
 _PYLIBS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pylibs")
 if os.path.isdir(_PYLIBS) and _PYLIBS not in sys.path:
@@ -68,6 +69,14 @@ def inject_globals():
         return f'<span class="{emoji_cls}">{usr.avatar or "👤" if usr else "👤"}</span>'
     
     return {"now": datetime.now(), "u": u, "avatar_html": avatar_html}
+
+
+@app.template_filter("from_json")
+def _from_json_filter(s):
+    try:
+        return json.loads(s)
+    except Exception:
+        return []
 
 
 #学生/教师端资格注册/验证
@@ -842,10 +851,10 @@ def dash_overview(u):
         acounts.append(Alert.query.filter(db.func.date(Alert.created_at) == d).count())
 
     #预警来源分布（饼图）
-    src_counter = {"chat": 0, "treehole": 0, "assessment": 0}
+    src_counter = {"chat": 0, "treehole": 0, "assessment": 0, "ai_chat": 0}
     for x in Alert.query.all():
         src_counter[x.source] = src_counter.get(x.source, 0) + 1
-    alert_src = [{"name": {"chat": "AI倾诉", "treehole": "树洞", "assessment": "测评"}.get(k, k),"value": v} for k, v in src_counter.items() if v > 0]
+    alert_src = [{"name": {"chat": "AI倾诉", "treehole": "树洞", "assessment": "测评", "ai_chat": "私密倾诉"}.get(k, k),"value": v} for k, v in src_counter.items() if v > 0]
 
     #最近测评（明细表）
     recent = Assessment.query.order_by(Assessment.created_at.desc()).limit(20).all()
@@ -973,7 +982,7 @@ def alerts(u):
     pages = max(1, (total + per - 1) // per)
     page = min(page, pages)
     page_items = items[(page - 1) * per: page * per]
-    src_names = {"chat": "AI倾诉", "treehole": "匿名树洞", "assessment": "心理测评"}
+    src_names = {"chat": "AI倾诉", "treehole": "匿名树洞", "assessment": "心理测评", "ai_chat": "私密倾诉"}
     cards = []
     for uid, g in page_items:
         s = students[uid]
@@ -1008,64 +1017,96 @@ def api_student_alert(u, sid):
     if not s or s.role != "student":
         return {"ok": False}, 404
     alerts_rows = Alert.query.filter_by(user_id=sid).order_by(Alert.created_at.desc()).all()
-    src_names = {"chat": "AI倾诉", "treehole": "匿名树洞", "assessment": "心理测评"}
+    src_names = {"chat": "AI倾诉", "treehole": "匿名树洞", "assessment": "心理测评", "ai_chat": "私密倾诉"}
     level_map = {"high": "高危", "medium": "关注"}
     status_map = {"open": "待处理", "handled": "已处理"}
 
-    #触发证据聚合
+    #触发证据聚合：以 Alert 为唯一权威来源，一条预警对应一条证据。
+    #业务表仅用于补充展示细节，匹配不到时用 Alert 自身字段兜底，确保综合评价与证据口径一致。
     evidence = []
-    seen = set()
-    #AI倾诉
-    if any(a.source == "chat" for a in alerts_rows):
-        sid_ids = [x.id for x in ChatSession.query.filter_by(user_id=s.id).all()]
-        msgs = []
-        if sid_ids:
-            msgs = ChatMessage.query.filter(ChatMessage.session_id.in_(sid_ids),ChatMessage.role == "user").order_by(ChatMessage.created_at.desc()).limit(10).all()
-        for m in msgs:
-            if m.risk == "high" or any(w in (m.content or "") for w in engine.CRISIS_WORDS):
-                key = ("chat", m.content[:40])
-                if key in seen:
-                    continue
-                seen.add(key)
-                evidence.append({"type": "AI倾诉消息", "detail": m.content,"extra": "情绪识别：%s · 风险：高危" % (m.emotion or "—"),"time": m.created_at.strftime("%Y-%m-%d %H:%M")})
-        for a in alerts_rows:
-            if a.source == "chat" and ("chat", a.content[:40]) not in seen:
-                seen.add(("chat", a.content[:40]))
-                evidence.append({"type": "AI倾诉消息", "detail": a.content,"extra": "触发词：" + (a.trigger or "未记录"),"time": a.created_at.strftime("%Y-%m-%d %H:%M")})
-    #树洞帖子
-    if any(a.source == "treehole" for a in alerts_rows):
-        posts = TreePost.query.filter_by(user_id=s.id).order_by(TreePost.created_at.desc()).limit(10).all()
-        for p in posts:
-            if p.crisis_flag or any(w in (p.content or "") for w in engine.CRISIS_WORDS):
-                key = ("treehole", p.id)
-                if key in seen:
-                    continue
-                seen.add(key)
-                evidence.append({"type": "树洞帖子", "detail": p.title + "：" + (p.content or "")[:180],"extra": "命中敏感词" if p.crisis_flag else "需要关注",
-                                 "time": p.created_at.strftime("%Y-%m-%d %H:%M")})
-        for a in alerts_rows:
-            if a.source == "treehole" and ("treehole", a.content[:40]) not in seen:
-                seen.add(("treehole", a.content[:40]))
-                evidence.append({"type": "树洞帖子", "detail": a.content[:180],"extra": "触发词：" + (a.trigger or "敏感词"),"time": a.created_at.strftime("%Y-%m-%d %H:%M")})
-    #心理测评（专业量表）
-    if any(a.source == "assessment" for a in alerts_rows):
-        ass = Assessment.query.filter_by(user_id=s.id).order_by(Assessment.created_at.desc()).all()
-        shown = 0
-        for x in ass:
-            sc = engine.SCALES.get(x.scale_code)
-            if not sc or x.scale_code in engine.PROFILE_SCALES:
-                continue
-            ri = engine.scale_risk_index(x.scale_code, x.score)
-            if ri is not None and ri >= 35:
-                key = ("assessment", x.id)
-                if key in seen:
-                    continue
-                seen.add(key)
-                evidence.append({"type": "心理测评", "detail": "%s：%s分（%s）" % (sc["name"], x.score, x.level or "—"),"extra": "风险指数 %s（0-100，越高越需关注）" % ri,
-                    "time": x.created_at.strftime("%Y-%m-%d %H:%M")})
-                shown += 1
-                if shown >= 6:
-                    break
+    used_biz = set()   # 已被占用的业务记录主键，避免一条业务记录被重复匹配
+
+    #预载该学生各业务表数据
+    chat_sess_ids = [x.id for x in ChatSession.query.filter_by(user_id=s.id).all()]
+    chat_msgs = (ChatMessage.query.filter(ChatMessage.session_id.in_(chat_sess_ids), ChatMessage.role == "user")
+                 .order_by(ChatMessage.created_at.desc()).all()) if chat_sess_ids else []
+    tree_posts = TreePost.query.filter_by(user_id=s.id).order_by(TreePost.created_at.desc()).all()
+    ass_rows = Assessment.query.filter_by(user_id=s.id).order_by(Assessment.created_at.desc()).all()
+    screen_logs = EmotionScreenLog.query.filter_by(user_id=s.id).order_by(EmotionScreenLog.created_at.desc()).all()
+
+    for a in alerts_rows:
+        alert_time = a.created_at
+
+        if a.source == "assessment":
+            m = re.search(r"量表高危:(.+)$", a.trigger or "")
+            code = m.group(1) if m else None
+            cand = [x for x in ass_rows if x.id not in used_biz and (not code or x.scale_code == code)]
+            pick = min(cand, key=lambda x: abs((x.created_at - alert_time).total_seconds())) if cand else None
+            if pick is not None:
+                used_biz.add(pick.id)
+                sc = engine.SCALES.get(pick.scale_code)
+                ri = engine.scale_risk_index(pick.scale_code, pick.score)
+                evidence.append({
+                    "type": "心理测评",
+                    "detail": "%s：%s分（%s）" % (sc["name"] if sc else pick.scale_code, pick.score, pick.level or "—"),
+                    "extra": ("风险指数 %s（0-100，参考）· 已命中高危预警" % ri) if ri is not None else "已命中高危预警",
+                    "time": pick.created_at.strftime("%Y-%m-%d %H:%M"),
+                })
+            else:
+                evidence.append({"type": "心理测评", "detail": a.content or "量表高危测评",
+                    "extra": "触发：" + (a.trigger or "量表高危"), "time": alert_time.strftime("%Y-%m-%d %H:%M")})
+
+        elif a.source == "ai_chat":
+            prefix = (a.content or "")[:30]
+            cand = [x for x in screen_logs if x.id not in used_biz and x.risk_level == "high"
+                    and prefix and (prefix in (x.masked_text or "") or (x.masked_text or "")[:30] in (a.content or ""))]
+            if not cand:
+                cand = [x for x in screen_logs if x.id not in used_biz and x.risk_level == "high"]
+            pick = min(cand, key=lambda x: abs((x.created_at - alert_time).total_seconds())) if cand else None
+            if pick is not None:
+                used_biz.add(pick.id)
+                evidence.append({
+                    "type": "私密倾诉", "detail": pick.masked_text,
+                    "extra": "主导情绪：%s · 识别：%s" % (pick.dominant_emotion or "—", pick.crisis_labels or "高危"),
+                    "time": pick.created_at.strftime("%Y-%m-%d %H:%M"),
+                })
+            else:
+                evidence.append({"type": "私密倾诉", "detail": a.content or "高危情绪倾诉",
+                    "extra": "触发：" + (a.trigger or "高危情绪"), "time": alert_time.strftime("%Y-%m-%d %H:%M")})
+
+        elif a.source == "chat":
+            prefix = (a.content or "")[:30]
+            cand = [x for x in chat_msgs if x.id not in used_biz and prefix
+                    and (prefix in (x.content or "") or (x.content or "")[:30] in (a.content or ""))]
+            if not cand:
+                cand = [x for x in chat_msgs if x.id not in used_biz
+                        and (x.risk == "high" or any(w in (x.content or "") for w in engine.CRISIS_WORDS))]
+            pick = min(cand, key=lambda x: abs((x.created_at - alert_time).total_seconds())) if cand else None
+            if pick is not None:
+                used_biz.add(pick.id)
+                evidence.append({"type": "AI倾诉消息", "detail": pick.content,
+                    "extra": "情绪识别：%s · 风险：高危" % (pick.emotion or "—"),
+                    "time": pick.created_at.strftime("%Y-%m-%d %H:%M")})
+            else:
+                evidence.append({"type": "AI倾诉消息", "detail": a.content,
+                    "extra": "触发词：" + (a.trigger or "未记录"), "time": alert_time.strftime("%Y-%m-%d %H:%M")})
+
+        elif a.source == "treehole":
+            prefix = (a.content or "")[:30]
+            cand = [x for x in tree_posts if x.id not in used_biz and prefix
+                    and (prefix in (x.content or "") or (x.content or "")[:30] in (a.content or ""))]
+            if not cand:
+                cand = [x for x in tree_posts if x.id not in used_biz
+                        and (x.crisis_flag or any(w in (x.content or "") for w in engine.CRISIS_WORDS))]
+            pick = min(cand, key=lambda x: abs((x.created_at - alert_time).total_seconds())) if cand else None
+            if pick is not None:
+                used_biz.add(pick.id)
+                evidence.append({"type": "树洞帖子", "detail": pick.title + "：" + (pick.content or "")[:180],
+                    "extra": "命中敏感词" if pick.crisis_flag else "需要关注",
+                    "time": pick.created_at.strftime("%Y-%m-%d %H:%M")})
+            else:
+                evidence.append({"type": "树洞帖子", "detail": a.content[:180],
+                    "extra": "触发词：" + (a.trigger or "敏感词"), "time": alert_time.strftime("%Y-%m-%d %H:%M")})
 
     #IRT自适应测评记录
     irt_rows = IRTTest.query.filter_by(user_id=s.id).order_by(IRTTest.created_at.desc()).limit(6).all()
@@ -1075,13 +1116,7 @@ def api_student_alert(u, sid):
         meta = irt_bank_meta.get(t.scale_code, {})
         irts.append({"name": meta.get("name", t.scale_code.upper()),"code": t.scale_code,"t_score": t.t_score, "theta": round(t.theta, 2),"se": round(t.se, 2), "level": t.level or "—",
             "n_items": t.n_items,"time": t.created_at.strftime("%Y-%m-%d %H:%M"),})
-        sev_word = t.level or ""
-        if ("中" in sev_word) or ("重" in sev_word) or ("危险" in sev_word):
-            key = ("irt", t.id)
-            if key not in seen:
-                seen.add(key)
-                evidence.append({"type": "IRT自适应测评","detail": "%s：T%s分（θ%+.2f，%s）" % (meta.get("name", t.scale_code.upper()), t.t_score, t.theta, t.level or "—"),
-                    "extra": "自适应作答 %d 题 · 测量标准误 %s" % (t.n_items, round(t.se, 2)),"time": t.created_at.strftime("%Y-%m-%d %H:%M"),})
+        # IRT 不生成 Alert，仅在独立 IRT 区块展示，不计入触发证据；私密倾诉已在上方按 Alert 逐条构建
 
     #判定依据，按来源引用科学文献、法规
     basis = []
@@ -1094,7 +1129,7 @@ def api_student_alert(u, sid):
                 item = {"title": engine.SCALES[code]["name"] + " · 分级依据（原始文献）","text": engine.SCALE_EVIDENCE[code]}
                 if not any(b["title"] == item["title"] for b in basis):
                     basis.append(item)
-        elif a.source in ("chat", "treehole"):
+        elif a.source in ("chat", "treehole", "ai_chat"):
             item = {"title": "危机信号 · 认定依据（科学文献与法规）", "text": engine.CRISIS_BASIS}
             if not any(b["title"] == item["title"] for b in basis):
                 basis.append(item)
@@ -1149,7 +1184,7 @@ def api_alert_detail(u, aid):
     s = db.session.get(User, a.user_id)
     if not s:
         return {"ok": False, "error": "学生不存在"}, 404
-    src_name = {"chat": "AI倾诉", "treehole": "匿名树洞", "assessment": "心理测评"}.get(a.source, a.source)
+    src_name = {"chat": "AI倾诉", "treehole": "匿名树洞", "assessment": "心理测评", "ai_chat": "私密倾诉"}.get(a.source, a.source)
 
     #触发证据
     evidence = []
@@ -1303,6 +1338,13 @@ def api_student_profile(u, sid):
 #初始化数据库，创建数据表
 def init_db():
     db.create_all()
+    # 轻量迁移：为已有表补充新增列
+    def _has_col(table, col):
+        rows = db.session.execute(db.text("PRAGMA table_info(%s)" % table)).fetchall()
+        return any(r[1] == col for r in rows)
+    if not _has_col("rag_messages", "emotion"):
+        db.session.execute(db.text("ALTER TABLE rag_messages ADD COLUMN emotion TEXT DEFAULT ''"))
+        db.session.commit()
 
 
 #呼吸放松页面展示
@@ -1638,6 +1680,12 @@ def my_assessments(u):
 
 
 #RAG心理咨询模块
+#文本脱敏：数字替换并截断，避免在日志中留存可识别的个人信息
+def _mask_text(text):
+    s = re.sub(r"\d+", "**", text or "")
+    return s[:60]
+
+
 #知识库对话页面
 @app.route("/rag_chat")
 @login_required()
@@ -1651,7 +1699,8 @@ def rag_chat_page(u):
             msgs = RAGMessage.query.filter_by(session_id=cur.id).order_by(RAGMessage.id).all()
     sessions = RAGSession.query.filter_by(user_id=u.id).order_by(RAGSession.last_at.desc()).limit(30).all()
 
-    return render_template("rag_chat.html", u=u, rag_status=rag_counselor.status(),sessions=sessions, cur=cur, msgs=msgs)
+    return render_template("rag_chat.html", u=u, rag_status=rag_counselor.status(),
+                           sessions=sessions, cur=cur, msgs=msgs)
 
 #新建RAG对话
 @app.route("/api/rag/session/new", methods=["POST"])
@@ -1703,6 +1752,39 @@ def rag_chat_api(u):
         s.title = msg[:18]
     s.last_at = datetime.now()
     db.session.commit()
+
+    #旁路情绪与危机筛查（不影响RAG问答，结果脱敏入库）
+    screen_result = {"ready": False}
+    if emotion_screen.status().get("ready"):
+        screen_result = emotion_screen.screen(msg)
+        # 情绪结果回写到本条用户消息，供历史会话准确展示
+        um.emotion = json.dumps(screen_result["emotions"], ensure_ascii=False)
+        db.session.add(EmotionScreenLog(
+            user_id=u.id,
+            session_id=s.id,
+            masked_text=_mask_text(msg),
+            risk_level=screen_result["risk_level"],
+            risk_score=screen_result["risk_score"],
+            dominant_emotion=screen_result["dominant_emotion"],
+            emotions=json.dumps(screen_result["emotions"], ensure_ascii=False),
+            crisis_labels="、".join(screen_result["crisis_labels"]),
+            by_keyword=screen_result["by_keyword"],
+        ))
+        #高危时生成预警，以学生为单位；已有同类待处理预警则不重复发
+        if screen_result["crisis"]:
+            dup = Alert.query.filter_by(
+                user_id=u.id, source="ai_chat", status="open"
+            ).order_by(Alert.created_at.desc()).first()
+            if not dup:
+                db.session.add(Alert(
+                    user_id=u.id,
+                    source="ai_chat",
+                    content=_mask_text(msg)[:100],
+                    trigger="、".join(screen_result["crisis_labels"]) or "高危情绪",
+                    level="high",
+                ))
+        db.session.commit()
+
     try:
         result = rag_counselor.chat(msg, history=history)
     except Exception as e:
@@ -1712,16 +1794,35 @@ def rag_chat_api(u):
     db.session.add(am)
     db.session.commit()
 
-    return jsonify({"ok": True, "sid": s.id, "title": s.title, **result})
+    return jsonify({"ok": True, "sid": s.id, "title": s.title, "screen": screen_result, **result})
 
-#启动时后台加载本地模型
+#独立情绪筛查接口（便于手动测试）
+@app.route("/api/emotion/screen", methods=["POST"])
+@login_required()
+def emotion_screen_api(u):
+    data = request.get_json(force=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"ok": False, "error": "empty"}), 400
+    if not emotion_screen.status().get("ready"):
+        return jsonify({"ok": False, "not_ready": True,
+                        "error": "筛查模型仍在加载，请稍等"}), 503
+    r = emotion_screen.screen(text)
+    return jsonify({"ok": True, **r})
+
+#启动时后台串行加载本地模型，避免并行初始化原生库引发冲突
 import threading as _th
-def _boot_rag():
+def _boot_all():
     try:
         rag_counselor.init_rag()
     except Exception as _e:
         print(f"[RAG] 后台加载失败: {_e}")
-_th.Thread(target=_boot_rag, daemon=True, name="rag-boot").start()
+    try:
+        if emotion_screen.init_emotion_screen():
+            emotion_screen.screen("今天心情还可以")
+    except Exception as _e:
+        print(f"[情绪筛查] 后台加载失败: {_e}")
+_th.Thread(target=_boot_all, daemon=True, name="boot").start()
 
 
 if __name__ == "__main__":
